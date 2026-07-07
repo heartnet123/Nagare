@@ -55,3 +55,16 @@ def test_system_prompt_mentions_tool_protocol():
     assert '<tool name="read_file">' in prompt
     assert 'run_shell' in prompt
 
+
+from services.agent.mcp import McpConfig
+
+
+def test_mcp_config_reads_empty_server_map():
+    with tempfile.TemporaryDirectory() as tmp:
+        path = Path(tmp) / 'mcp_servers.json'
+        path.write_text('{"servers": {}}', encoding='utf-8')
+        config = McpConfig(path)
+
+        assert config.servers() == {}
+
+

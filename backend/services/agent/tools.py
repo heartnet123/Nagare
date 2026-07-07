@@ -8,6 +8,7 @@ import subprocess
 
 from .memory import MemoryStore
 from .skills import SkillsStore
+from .mcp import McpClient, McpConfig
 
 
 @dataclass(frozen=True)
@@ -64,7 +65,9 @@ class ToolExecutor:
             'remember': self._remember,
             'recall': self._recall,
             'list_skills': self._list_skills,
-            'use_skill': self._use_skill
+            'use_skill': self._use_skill,
+            'mcp_list_tools': self._mcp_list_tools,
+            'mcp_call_tool': self._mcp_call_tool
         }
         handler = handlers.get(call.name)
         if handler is None:
@@ -169,3 +172,20 @@ class ToolExecutor:
         if not name:
             return ToolResult(False, 'name required')
         return ToolResult(True, self.skills.read(name))
+
+    def _mcp_client(self) -> McpClient:
+        return McpClient(McpConfig(self.data_dir / 'mcp_servers.json'))
+
+    def _mcp_list_tools(self, args: dict) -> ToolResult:
+        return ToolResult(True, json.dumps(self._mcp_client().list_tools(), indent=2))
+
+    def _mcp_call_tool(self, args: dict) -> ToolResult:
+        server = str(args.get('server', ''))
+        tool = str(args.get('tool', ''))
+        arguments = args.get('arguments', {})
+        if not server or not tool:
+            return ToolResult(False, 'server and tool required')
+        if not isinstance(arguments, dict):
+            return ToolResult(False, 'arguments must be object')
+        return ToolResult(True, json.dumps(self._mcp_client().call_tool(server, tool, arguments), indent=2))
+
