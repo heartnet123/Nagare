@@ -37,3 +37,21 @@ def test_memory_add_and_recall():
 
         assert saved['text'] == 'NAGARE evaluates RAG and agent systems'
         assert results[0]['text'] == 'NAGARE evaluates RAG and agent systems'
+
+
+from services.agent.loop import build_system_prompt, sse_pack
+
+
+def test_sse_pack_formats_event_and_json_data():
+    packed = sse_pack('delta', {'content': 'hi'})
+
+    assert packed.startswith('event: delta\n')
+    assert 'data: {"content": "hi"}\n\n' in packed
+
+
+def test_system_prompt_mentions_tool_protocol():
+    prompt = build_system_prompt(memories=[], skills=[])
+
+    assert '<tool name="read_file">' in prompt
+    assert 'run_shell' in prompt
+
