@@ -1,13 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { Cpu, Plus, Trash2, Edit2, Play, AlertCircle, CheckCircle, Terminal, X, Save } from '@lucide/vue'
+import type { McpServer } from '~/types'
 import { useApi } from '~/composables/useApi'
-
-interface McpServer {
-  name: string
-  command: string
-  args: string[]
-}
 
 const api = useApi()
 const servers = ref<McpServer[]>([])

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, nextTick, computed, watch } from 'vue'
+import type { Session } from '~/types'
 import { useRoute, useRouter } from 'vue-router'
 import {
   Waves,
@@ -37,19 +38,6 @@ interface Message {
   content: string
   streaming?: boolean
   toolEvents?: ToolEvent[]
-}
-
-interface Session {
-  id: string
-  name: string
-  model: string
-  endpoint_url: string
-  rag: boolean
-  archived: boolean
-  is_important: boolean
-  message_count: number
-  created_at: string | null
-  updated_at: string | null
 }
 
 const props = withDefaults(defineProps<{

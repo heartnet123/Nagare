@@ -1,0 +1,26 @@
+{
+  "plan": "nuxt-refactor",
+  "mode": "delegated",
+  "wave": 5,
+  "packets": {
+    "A": "completed",
+    "B": "completed",
+    "C": "completed",
+    "D": "completed",
+    "E": "completed",
+    "F": "skipped"
+  },
+  "verification": {
+    "typecheck": "pass",
+    "build": "pass",
+    "routes": "pass"
+  },
+  "started_at": "2026-07-08T13:00:00Z",
+  "completed_at": "2026-07-08T16:30:00Z",
+  "build": {
+    "client_modules": 2648,
+    "server_modules": 912,
+    "client_time": "172s",
+    "server_time": "92s"
+  }
+}

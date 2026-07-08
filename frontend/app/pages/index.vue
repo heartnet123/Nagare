@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import type { Session } from '~/types'
 import {
   Waves,
   Search,
@@ -18,9 +19,9 @@ definePageMeta({
 })
 
 const api = useApi()
-const recentSessions = ref<any[]>([])
+const recentSessions = ref<Session[]>([])
 
-const formatRelativeTime = (dateStr: string | null) => {
+const formatRelativeTime = (dateStr: string | null | undefined) => {
   if (!dateStr) return ''
   try {
     const cleanStr = dateStr.replace(' ', 'T')

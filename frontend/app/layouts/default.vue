@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import { Menu, LayoutGrid, ChevronDown, Sun, Moon, Monitor } from '@lucide/vue'
 
-const sidebarOpen = ref(true)
-const mobileMenuOpen = ref(false)
+const { sidebarOpen, mobileMenuOpen, toggleSidebar, openMobileMenu, closeMobileMenu } = useAppStore()
+const { chatDrawerOpen, onNavigateToChat } = useSessionStore()
 
 const colorMode = useColorMode()
 
@@ -20,14 +20,13 @@ function cycleTheme() {
 }
 
 const route = useRoute()
-const isChatOpen = useState<boolean>('chat-drawer-open', () => false)
 
 // Automatically close the chat drawer when navigating to /chat page
 watch(
   () => route.path,
   (newPath) => {
     if (newPath === '/chat') {
-      isChatOpen.value = false
+      onNavigateToChat()
     }
   }
 )
@@ -39,14 +38,14 @@ watch(
     <DashboardSidebar
       :open="sidebarOpen"
       :mobile-open="mobileMenuOpen"
-      @close-mobile="mobileMenuOpen = false"
+      @close-mobile="closeMobileMenu"
     />
     
 
     <!-- Sliding Chat Drawer next to Sidebar -->
     <Transition name="slide">
       <div
-        v-if="isChatOpen"
+        v-if="chatDrawerOpen"
         class="border-r border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-950 flex flex-col shrink-0 relative z-30 overflow-hidden"
       >
         <div class="w-[440px] h-full flex flex-col">
@@ -61,7 +60,7 @@ watch(
           <button
             class="p-1.5 -ml-2 rounded-lg text-stone-500 hover:bg-stone-200 md:hidden"
             aria-label="Open menu"
-            @click="mobileMenuOpen = true"
+            @click="openMobileMenu"
           >
             <Menu
               :size="20"
@@ -71,7 +70,7 @@ watch(
           <button
             class="hidden md:block p-1.5 -ml-2 rounded-lg text-stone-500 hover:bg-stone-200"
             aria-label="Toggle sidebar"
-            @click="sidebarOpen = !sidebarOpen"
+            @click="toggleSidebar"
           >
             <Menu
               :size="20"

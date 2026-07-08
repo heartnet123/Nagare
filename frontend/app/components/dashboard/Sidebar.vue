@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import {
   Home,
@@ -8,49 +8,9 @@ import {
   X,
   ArrowRight,
   Command,
-  MessageSquare,
-  BarChart2,
-  Database,
-  Target,
-  FileText,
-  Workflow,
-  Bot,
-  Activity,
-  Box,
-  BookOpen,
-  Settings,
-  Cpu
+  MessageSquare
 } from '@lucide/vue'
-
-const navGroups = [
-  {
-    title: 'EVALUATIONS',
-    items: [
-      { href: '/evaluations', icon: BarChart2, label: 'Evaluations' },
-      { href: '/datasets', icon: Database, label: 'Datasets' },
-      { href: '/benchmark', icon: Target, label: 'Benchmark' },
-      { href: '/logs', icon: FileText, label: 'Logs' }
-    ]
-  },
-  {
-    title: 'SYSTEM OS',
-    items: [
-      { href: '/pipeline', icon: Workflow, label: 'Pipeline' },
-      { href: '/agents', icon: Bot, label: 'Agents' },
-      { href: '/monitoring', icon: Activity, label: 'Monitoring' },
-      { href: '/analytics', icon: BarChart2, label: 'Analytics' }
-    ]
-  },
-  {
-    title: 'CONFIGURATION',
-    items: [
-      { href: '/models', icon: Box, label: 'Models' },
-      { href: '/knowledge', icon: BookOpen, label: 'Knowledge' },
-      { href: '/mcp', icon: Cpu, label: 'MCP Servers' },
-      { href: '/settings', icon: Settings, label: 'Settings' }
-    ]
-  }
-]
+import { navGroups } from '~/utils/nav'
 
 defineProps<{
   open: boolean
@@ -62,50 +22,37 @@ const emit = defineEmits<{
 }>()
 
 const route = useRoute()
-const api = useApi()
-const sessionsList = useState<any[]>('active-sessions', () => [])
+const { recentSessions, loadSessions, chatDrawerOpen, drawerSessionId } = useSessionStore()
 
-const recentSessions = computed(() => sessionsList.value.slice(0, 5))
-
-onMounted(async () => {
-  if (sessionsList.value.length === 0) {
-    try {
-      const res = await api.sessions.list()
-      sessionsList.value = res.sessions
-    } catch (error) {
-      console.error('Sidebar failed to load sessions:', error)
-    }
-  }
-})
+// Auto-load sessions once
+if (import.meta.client && recentSessions.value.length === 0) {
+  loadSessions()
+}
 
 const isActive = (href: string) => {
   const pathname = route.path
   return href === '/' ? pathname === '/' : pathname.startsWith(href)
 }
 
-// Drawer state
-const isChatDrawerOpen = useState<boolean>('chat-drawer-open', () => false)
-const drawerSessionId = useState<string | null>('chat-drawer-session-id', () => null)
-
 const isNewChatLinkActive = computed(() => {
   if (route.path === '/chat') {
     return !route.query.session
   }
-  return isChatDrawerOpen.value && !drawerSessionId.value
+  return chatDrawerOpen.value && !drawerSessionId.value
 })
 
 const isRecentChatActive = (sessionId: string) => {
   if (route.path === '/chat') {
     return route.query.session === sessionId
   }
-  return isChatDrawerOpen.value && drawerSessionId.value === sessionId
+  return chatDrawerOpen.value && drawerSessionId.value === sessionId
 }
 
 const handleNewChatClick = (e: MouseEvent) => {
   emit('closeMobile')
   if (route.path !== '/chat') {
     e.preventDefault()
-    isChatDrawerOpen.value = true
+    chatDrawerOpen.value = true
     drawerSessionId.value = null
   }
 }
@@ -114,7 +61,7 @@ const handleRecentChatClick = (e: MouseEvent, sessionId: string) => {
   emit('closeMobile')
   if (route.path !== '/chat') {
     e.preventDefault()
-    isChatDrawerOpen.value = true
+    chatDrawerOpen.value = true
     drawerSessionId.value = sessionId
   }
 }

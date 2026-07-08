@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
+import type { Agent, Skill } from '~/types'
 import { Bot, Activity, Plus, X, Save, AlertCircle, CheckCircle, Cpu, Hammer } from '@lucide/vue'
-import { useApi } from '~/composables/useApi'
 
 definePageMeta({
   layout: 'default'
@@ -22,8 +22,8 @@ const saving = ref(false)
 const form = reactive({
   name: '',
   model: 'llama3.1',
-  type: 'chat',
-  status: 'active',
+  type: 'chat' as 'chat' | 'rag' | 'search',
+  status: 'active' as 'active' | 'inactive',
   system_prompt: '',
   skills: [] as string[]
 })
@@ -215,7 +215,7 @@ onMounted(() => {
               </div>
             </div>
             <DashboardBadge
-              :tone="a.status === 'active' ? 'emerald' : 'stone'"
+              :tone="a.status === 'active' ? 'emerald' : 'neutral'"
             >
               {{ a.status === 'active' ? 'Active' : 'Inactive' }}
             </DashboardBadge>
