@@ -99,15 +99,15 @@ Skills:
 
 
 def count_tokens(text: str, model: str = "gpt-4o") -> int:
-    import tiktoken
     try:
-        encoding = tiktoken.encoding_for_model(model)
-    except Exception:
+        import tiktoken
         try:
-            encoding = tiktoken.get_encoding("cl100k_base")
+            encoding = tiktoken.encoding_for_model(model)
         except Exception:
-            return len(text) // 4  # fallback rough estimate
-    return len(encoding.encode(text))
+            encoding = tiktoken.get_encoding("cl100k_base")
+        return len(encoding.encode(text))
+    except (ImportError, ModuleNotFoundError):
+        return len(text) // 4  # fallback rough estimate
 
 
 async def stream_agent(messages: list[dict], settings: AgentSettings | None = None, tools: bool = True):
