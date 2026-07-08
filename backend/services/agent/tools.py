@@ -9,6 +9,7 @@ import subprocess
 from .memory import MemoryStore
 from .skills import SkillsStore
 from .mcp import McpClient, McpConfig
+from services.memory import MemoryService
 
 
 @dataclass(frozen=True)
@@ -50,6 +51,7 @@ class ToolExecutor:
         self.data_dir = data_dir
         self.enable_shell = enable_shell
         self.memory = MemoryStore(data_dir / 'agent_memory.json')
+        self.memory_svc = MemoryService(data_dir)
         self.skills = SkillsStore(data_dir / 'skills')
 
     def execute(self, call: ToolCall) -> ToolResult:
@@ -157,11 +159,25 @@ class ToolExecutor:
         text = str(args.get('text', '')).strip()
         if not text:
             return ToolResult(False, 'text required')
-        item = self.memory.add(text)
-        return ToolResult(True, json.dumps(item))
+        # Use MemoryService for enriched storage (category, source, pinned)
+        entry = self.memory_svc.manager.add_entry(text, source="agent")
+        memories = self.memory_svc.manager.load_all()
+        memories.append(entry)
+        self.memory_svc.manager.save(memories)
+        # Also add to vector store if available
+        if self.memory_svc.vector_store and self.memory_svc.vector_store.healthy:
+            self.memory_svc.vector_store.add(entry["id"], text)
+        # Keep the old MemoryStore in sync for backward compat
+        self.memory.add(text)
+        return ToolResult(True, json.dumps(entry))
 
     def _recall(self, args: dict) -> ToolResult:
         query = str(args.get('query', ''))
+        # Use MemoryService for keyword + Jaccard relevance scoring
+        memories = self.memory_svc.manager.get_relevant_memories(query, max_items=10)
+        if memories:
+            return ToolResult(True, json.dumps(memories, indent=2))
+        # Fallback to old MemoryStore search
         return ToolResult(True, json.dumps(self.memory.search(query), indent=2))
 
     def _list_skills(self, args: dict) -> ToolResult:

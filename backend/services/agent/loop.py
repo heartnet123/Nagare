@@ -41,10 +41,25 @@ def sse_pack(event: str, data: dict) -> str:
     return f'event: {event}\ndata: {json.dumps(data)}\n\n'
 
 
-def build_system_prompt(memories: list[dict], skills: list[dict]) -> str:
-    memory_text = '\n'.join(f'- {item.get("text", "")}' for item in memories[:10]) or '- none'
+def build_system_prompt(memories: list[dict], skills: list[dict], system_prompt_append: str = '') -> str:
+    # Show pinned memories first, then by recency
+    pinned = [m for m in memories if m.get('pinned')]
+    rest = [m for m in memories if not m.get('pinned')]
+    ordered = sorted(pinned, key=lambda m: m.get('timestamp', 0), reverse=True)
+    ordered += sorted(rest, key=lambda m: m.get('timestamp', 0), reverse=True)
+
+    memory_lines = []
+    for item in ordered[:10]:
+        cat = item.get('category', '')
+        text = item.get('text', '')
+        if cat and cat != 'fact':
+            memory_lines.append(f'- [{cat}] {text}')
+        else:
+            memory_lines.append(f'- {text}')
+    memory_text = '\n'.join(memory_lines) or '- none'
+
     skill_text = '\n'.join(f'- {item.get("name")}: {item.get("title")}' for item in skills[:20]) or '- none'
-    return f'''You are NAGARE's local agent. Answer clearly and use tools when useful.
+    base = f'''You are NAGARE's local agent. Answer clearly and use tools when useful.
 
 {TOOL_DOCS}
 
@@ -60,15 +75,27 @@ Memories:
 Skills:
 {skill_text}
 '''
+    if system_prompt_append and system_prompt_append.strip():
+        base = base.rstrip() + '\n\n' + system_prompt_append.strip() + '\n'
+    return base
 
 
 async def stream_agent(messages: list[dict], settings: AgentSettings | None = None):
-    settings = settings or AgentSettings.from_env()
+    settings = settings or AgentSettings.from_config_file()
     data_dir = default_data_dir()
     workspace = default_workspace()
+    # Load system_prompt_append from persisted config if present
+    _system_prompt_append = ''
+    try:
+        import json as _json
+        _cfg_path = data_dir / 'agent_config.json'
+        if _cfg_path.exists():
+            _system_prompt_append = _json.loads(_cfg_path.read_text('utf-8')).get('system_prompt_append', '')
+    except Exception:
+        pass
     executor = ToolExecutor(workspace=workspace, data_dir=data_dir)
     skills = SkillsStore(data_dir / 'skills').list()
-    history = [{'role': 'system', 'content': build_system_prompt(executor.memory.all(), skills)}]
+    history = [{'role': 'system', 'content': build_system_prompt(executor.memory_svc.manager.load_all(), skills, _system_prompt_append)}]
     history.extend(messages)
     client = OpenAICompatibleClient(settings.base_url, settings.api_key)
 

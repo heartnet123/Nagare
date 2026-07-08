@@ -4,6 +4,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  estree-walker@3.0.3: de74555e6917a93f859fa9e8e4a3e674264917e0cc141b2a37a2a64c59ebd47c
+
 importers:
 
   .:
@@ -8485,7 +8488,7 @@ snapshots:
 
   estree-walker@2.0.2: {}
 
-  estree-walker@3.0.3:
+  estree-walker@3.0.3(patch_hash=de74555e6917a93f859fa9e8e4a3e674264917e0cc141b2a37a2a64c59ebd47c):
     dependencies:
       '@types/estree': 1.0.9
 
@@ -9038,7 +9041,7 @@ snapshots:
 
   magic-regexp@0.10.0:
     dependencies:
-      estree-walker: 3.0.3
+      estree-walker: 3.0.3(patch_hash=de74555e6917a93f859fa9e8e4a3e674264917e0cc141b2a37a2a64c59ebd47c)
       magic-string: 0.30.21
       mlly: 1.8.2
       regexp-tree: 0.1.27
@@ -10354,7 +10357,7 @@ snapshots:
   unctx@2.5.0:
     dependencies:
       acorn: 8.16.0
-      estree-walker: 3.0.3
+      estree-walker: 3.0.3(patch_hash=de74555e6917a93f859fa9e8e4a3e674264917e0cc141b2a37a2a64c59ebd47c)
       magic-string: 0.30.21
       unplugin: 2.3.11
 
@@ -10380,7 +10383,7 @@ snapshots:
     dependencies:
       acorn: 8.16.0
       escape-string-regexp: 5.0.0
-      estree-walker: 3.0.3
+      estree-walker: 3.0.3(patch_hash=de74555e6917a93f859fa9e8e4a3e674264917e0cc141b2a37a2a64c59ebd47c)
       local-pkg: 1.2.1
       magic-string: 0.30.21
       mlly: 1.8.2
@@ -10397,7 +10400,7 @@ snapshots:
     dependencies:
       acorn: 8.16.0
       escape-string-regexp: 5.0.0
-      estree-walker: 3.0.3
+      estree-walker: 3.0.3(patch_hash=de74555e6917a93f859fa9e8e4a3e674264917e0cc141b2a37a2a64c59ebd47c)
       local-pkg: 1.2.1
       magic-string: 0.30.21
       mlly: 1.8.2
@@ -10617,7 +10620,7 @@ snapshots:
 
   vite-plugin-vue-tracer@1.4.0(vite@7.3.3(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.47.1)(yaml@2.9.0))(vue@3.5.35(typescript@6.0.3)):
     dependencies:
-      estree-walker: 3.0.3
+      estree-walker: 3.0.3(patch_hash=de74555e6917a93f859fa9e8e4a3e674264917e0cc141b2a37a2a64c59ebd47c)
       exsolve: 1.0.8
       magic-string: 0.30.21
       pathe: 2.0.3

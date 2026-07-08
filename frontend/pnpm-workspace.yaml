@@ -4,3 +4,5 @@ allowBuilds:
   esbuild: false
   unrs-resolver: false
   vue-demi: false
+patchedDependencies:
+  estree-walker@3.0.3: patches/estree-walker@3.0.3.patch

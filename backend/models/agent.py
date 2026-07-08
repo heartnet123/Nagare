@@ -1,10 +1,14 @@
 from pydantic import BaseModel
+from typing import List, Optional
 
 
 class AgentBase(BaseModel):
     name: str
-    type: str  # "rag" | "chat" | "search"
-    status: str  # "active" | "inactive"
+    type: str = "chat"  # "rag" | "chat" | "search"
+    status: str = "active"  # "active" | "inactive"
+    model: str = "llama3.1"
+    system_prompt: str = ""
+    skills: List[str] = []
 
 
 class AgentCreate(AgentBase):

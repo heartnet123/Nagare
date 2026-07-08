@@ -33,7 +33,7 @@ class ChatStreamRequest(BaseModel):
 
 
 async def event_stream(payload: ChatStreamRequest) -> AsyncIterator[str]:
-    settings = AgentSettings.from_env()
+    settings = AgentSettings.from_config_file()
     if payload.model:
         settings = AgentSettings(settings.base_url, settings.api_key, payload.model, settings.max_rounds)
     if payload.max_rounds:

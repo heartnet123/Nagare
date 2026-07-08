@@ -1,0 +1,37 @@
+[
+  {
+    "id": "agent-1",
+    "name": "Legal RAG",
+    "type": "rag",
+    "status": "active",
+    "requests": 12847,
+    "latency": 342.0,
+    "model": "llama3.1",
+    "system_prompt": "You are a legal document query helper.",
+    "skills": [
+      "project"
+    ]
+  },
+  {
+    "id": "agent-2",
+    "name": "Support Bot",
+    "type": "chat",
+    "status": "active",
+    "requests": 9203,
+    "latency": 189.0,
+    "model": "llama3.1",
+    "system_prompt": "You are a general support bot.",
+    "skills": []
+  },
+  {
+    "id": "agent-3",
+    "name": "Search Assistant",
+    "type": "search",
+    "status": "inactive",
+    "requests": 5021,
+    "latency": 156.0,
+    "model": "gpt-4o",
+    "system_prompt": "You are a web search helper.",
+    "skills": []
+  }
+]

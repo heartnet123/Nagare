@@ -19,7 +19,8 @@ export const useApi = () => {
         method: 'POST',
         body: data,
         baseURL
-      })
+      }),
+      listSkills: () => $fetch('/api/agents/skills', { baseURL })
     },
     datasets: {
       list: () => $fetch('/api/datasets', { baseURL }),
@@ -52,6 +53,18 @@ export const useApi = () => {
         method: 'DELETE',
         baseURL
       })
+    },
+    agentConfig: {
+      get: () => $fetch('/api/agent/config', { baseURL }),
+      update: (data: {
+        base_url?: string
+        api_key?: string
+        model?: string
+        max_rounds?: number
+        workspace?: string
+        system_prompt_append?: string
+      }) => $fetch('/api/agent/config', { method: 'PUT', body: data, baseURL }),
+      reset: () => $fetch('/api/agent/config', { method: 'DELETE', baseURL })
     }
   }
 }
