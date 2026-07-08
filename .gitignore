@@ -1,0 +1,50 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+.pytest_cache/
+.tox/
+.venv/
+venv/
+env/
+
+# --- Nuxt / Frontend ---
+node_modules/
+.nuxt/
+.output/
+.data/
+.nitro/
+.cache/
+
+# --- IDE / Editors ---
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+
+# --- Environment ---
+.env
+.env.*
+!.env.example
+
+# --- Project / Tooling dot dirs ---
+.kombai/
+.omc/
+.omo/
+.serena/
+
+# --- Logs ---
+*.log
+logs/
+
+# --- Local notes & scratch ---
+ROADMAP.md
+progress.txt
