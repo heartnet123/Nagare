@@ -37,6 +37,39 @@ export const useApi = () => {
     logs: {
       list: () => $fetch('/api/logs', { baseURL })
     },
+    sessions: {
+      list: (search?: string) => $fetch<{ sessions: any[]; total: number }>('/api/sessions', { baseURL, query: { search } }),
+      listArchived: (search?: string) => $fetch<{ sessions: any[]; total: number }>('/api/sessions/archived', { baseURL, query: { search } }),
+      create: (data: { name?: string; model?: string; endpoint_url?: string }) => $fetch<any>('/api/session', {
+        method: 'POST',
+        body: data,
+        baseURL
+      }),
+      get: (sid: string) => $fetch<any>(`/api/session/${sid}`, { baseURL }),
+      update: (sid: string, data: { name?: string; folder?: string; model?: string }) => $fetch<any>(`/api/session/${sid}`, {
+        method: 'PATCH',
+        body: data,
+        baseURL
+      }),
+      delete: (sid: string) => $fetch<any>(`/api/session/${sid}`, {
+        method: 'DELETE',
+        baseURL
+      }),
+      archive: (sid: string) => $fetch<any>(`/api/session/${sid}/archive`, {
+        method: 'POST',
+        baseURL
+      }),
+      unarchive: (sid: string) => $fetch<any>(`/api/session/${sid}/unarchive`, {
+        method: 'POST',
+        baseURL
+      }),
+      toggleImportant: (sid: string, important: boolean) => $fetch<any>(`/api/session/${sid}/important`, {
+        method: 'POST',
+        query: { important },
+        baseURL
+      }),
+      getHistory: (sid: string) => $fetch<any[]>(`/api/history/${sid}`, { baseURL })
+    },
     mcp: {
       list: () => $fetch('/api/mcp/servers', { baseURL }),
       create: (data: { name: string; command: string; args?: string[] }) => $fetch('/api/mcp/servers', {

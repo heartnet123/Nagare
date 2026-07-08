@@ -1,7 +1,56 @@
 <script setup lang="ts">
+import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { Home, SquarePen, Waves, X, ArrowRight, Command } from '@lucide/vue'
-import { navGroups } from '~/utils/nav'
+import {
+  Home,
+  SquarePen,
+  Waves,
+  X,
+  ArrowRight,
+  Command,
+  MessageSquare,
+  BarChart2,
+  Database,
+  Target,
+  FileText,
+  Workflow,
+  Bot,
+  Activity,
+  Box,
+  BookOpen,
+  Settings,
+  Cpu
+} from '@lucide/vue'
+
+const navGroups = [
+  {
+    title: 'EVALUATIONS',
+    items: [
+      { href: '/evaluations', icon: BarChart2, label: 'Evaluations' },
+      { href: '/datasets', icon: Database, label: 'Datasets' },
+      { href: '/benchmark', icon: Target, label: 'Benchmark' },
+      { href: '/logs', icon: FileText, label: 'Logs' }
+    ]
+  },
+  {
+    title: 'SYSTEM OS',
+    items: [
+      { href: '/pipeline', icon: Workflow, label: 'Pipeline' },
+      { href: '/agents', icon: Bot, label: 'Agents' },
+      { href: '/monitoring', icon: Activity, label: 'Monitoring' },
+      { href: '/analytics', icon: BarChart2, label: 'Analytics' }
+    ]
+  },
+  {
+    title: 'CONFIGURATION',
+    items: [
+      { href: '/models', icon: Box, label: 'Models' },
+      { href: '/knowledge', icon: BookOpen, label: 'Knowledge' },
+      { href: '/mcp', icon: Cpu, label: 'MCP Servers' },
+      { href: '/settings', icon: Settings, label: 'Settings' }
+    ]
+  }
+]
 
 defineProps<{
   open: boolean
@@ -13,10 +62,61 @@ const emit = defineEmits<{
 }>()
 
 const route = useRoute()
+const api = useApi()
+const sessionsList = useState<any[]>('active-sessions', () => [])
+
+const recentSessions = computed(() => sessionsList.value.slice(0, 5))
+
+onMounted(async () => {
+  if (sessionsList.value.length === 0) {
+    try {
+      const res = await api.sessions.list()
+      sessionsList.value = res.sessions
+    } catch (error) {
+      console.error('Sidebar failed to load sessions:', error)
+    }
+  }
+})
 
 const isActive = (href: string) => {
   const pathname = route.path
   return href === '/' ? pathname === '/' : pathname.startsWith(href)
+}
+
+// Drawer state
+const isChatDrawerOpen = useState<boolean>('chat-drawer-open', () => false)
+const drawerSessionId = useState<string | null>('chat-drawer-session-id', () => null)
+
+const isNewChatLinkActive = computed(() => {
+  if (route.path === '/chat') {
+    return !route.query.session
+  }
+  return isChatDrawerOpen.value && !drawerSessionId.value
+})
+
+const isRecentChatActive = (sessionId: string) => {
+  if (route.path === '/chat') {
+    return route.query.session === sessionId
+  }
+  return isChatDrawerOpen.value && drawerSessionId.value === sessionId
+}
+
+const handleNewChatClick = (e: MouseEvent) => {
+  emit('closeMobile')
+  if (route.path !== '/chat') {
+    e.preventDefault()
+    isChatDrawerOpen.value = true
+    drawerSessionId.value = null
+  }
+}
+
+const handleRecentChatClick = (e: MouseEvent, sessionId: string) => {
+  emit('closeMobile')
+  if (route.path !== '/chat') {
+    e.preventDefault()
+    isChatDrawerOpen.value = true
+    drawerSessionId.value = sessionId
+  }
 }
 </script>
 
@@ -101,10 +201,10 @@ const isActive = (href: string) => {
             to="/chat"
             class="flex items-center justify-between w-full px-3 py-2.5 rounded-xl transition-all duration-200"
             :class="[
-              isActive('/chat') ? 'bg-white shadow-sm border border-stone-200 text-stone-900' : 'text-stone-600 hover:bg-stone-200/50',
+              isNewChatLinkActive ? 'bg-white shadow-sm border border-stone-200 text-stone-900' : 'text-stone-600 hover:bg-stone-200/50',
               !open && 'justify-center'
             ]"
-            @click="emit('closeMobile')"
+            @click="handleNewChatClick"
           >
             <div class="flex items-center">
               <SquarePen
@@ -124,6 +224,34 @@ const isActive = (href: string) => {
               <Command :size="10" /> K
             </div>
           </NuxtLink>
+        </div>
+
+        <!-- Recent Chats (visible when sidebar is open and active chats exist) -->
+        <div v-if="open && recentSessions.length > 0" class="space-y-1">
+          <div class="px-3 mb-2 text-[11px] font-semibold tracking-wider text-stone-400 dark:text-stone-500 uppercase">
+            Recent Chats
+          </div>
+          <div class="space-y-0.5">
+            <NuxtLink
+              v-for="s in recentSessions"
+              :key="s.id"
+              :to="`/chat?session=${s.id}`"
+              class="flex items-center w-full px-3 py-2 rounded-xl transition-all duration-200 group text-stone-500 dark:text-stone-400 hover:bg-stone-200/50 dark:hover:bg-stone-800/30 hover:text-stone-800 dark:hover:text-stone-200"
+              :class="[
+                isRecentChatActive(s.id)
+                  ? 'bg-white dark:bg-stone-800 shadow-sm border border-stone-200/60 dark:border-stone-700 text-stone-900 dark:text-stone-100'
+                  : ''
+              ]"
+              @click="(e) => handleRecentChatClick(e, s.id)"
+            >
+              <MessageSquare
+                :size="15"
+                :stroke-width="1.5"
+                class="shrink-0 text-stone-400 mr-2"
+              />
+              <span class="text-xs font-medium truncate flex-1 leading-none">{{ s.name }}</span>
+            </NuxtLink>
+          </div>
         </div>
 
         <div

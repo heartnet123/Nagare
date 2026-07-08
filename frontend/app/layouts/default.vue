@@ -16,17 +16,44 @@ const themeIcon = computed(() => ({
 function cycleTheme() {
   const order = ['light', 'dark', 'system'] as const
   const idx = order.indexOf(colorMode.preference as typeof order[number])
-  colorMode.preference = order[(idx + 1) % 3]
+  colorMode.preference = order[(idx + 1) % 3] as string
 }
+
+const route = useRoute()
+const isChatOpen = useState<boolean>('chat-drawer-open', () => false)
+
+// Automatically close the chat drawer when navigating to /chat page
+watch(
+  () => route.path,
+  (newPath) => {
+    if (newPath === '/chat') {
+      isChatOpen.value = false
+    }
+  }
+)
 </script>
 
 <template>
   <div class="flex h-screen w-full overflow-hidden bg-[#FAFAFA] dark:bg-stone-950 text-stone-800 dark:text-stone-50 font-sans">
+    
     <DashboardSidebar
       :open="sidebarOpen"
       :mobile-open="mobileMenuOpen"
       @close-mobile="mobileMenuOpen = false"
     />
+    
+
+    <!-- Sliding Chat Drawer next to Sidebar -->
+    <Transition name="slide">
+      <div
+        v-if="isChatOpen"
+        class="border-r border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-950 flex flex-col shrink-0 relative z-30 overflow-hidden"
+      >
+        <div class="w-[440px] h-full flex flex-col">
+          <ChatChatView :is-in-drawer="true" />
+        </div>
+      </div>
+    </Transition>
 
     <main class="flex-1 flex flex-col min-w-0 overflow-hidden relative">
       <header class="flex items-center justify-between px-6 py-4 shrink-0">
@@ -96,3 +123,16 @@ function cycleTheme() {
     </main>
   </div>
 </template>
+
+<style scoped>
+.slide-enter-active,
+.slide-leave-active {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.slide-enter-from,
+.slide-leave-to {
+  width: 0px;
+  opacity: 0;
+}
+</style>
