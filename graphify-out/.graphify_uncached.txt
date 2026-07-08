@@ -1,0 +1,9 @@
+/mnt/e/webappgithub/nagare/backend/data/skills/project.md
+/mnt/e/webappgithub/nagare/backend/requirements.txt
+/mnt/e/webappgithub/nagare/docs/superpowers/plans/2026-07-07-chat-agents-streaming.md
+/mnt/e/webappgithub/nagare/docs/superpowers/plans/2026-07-07-sqlite-chromadb-knowledge.md
+/mnt/e/webappgithub/nagare/docs/superpowers/specs/2026-07-07-chat-agents-streaming-design.md
+/mnt/e/webappgithub/nagare/docs/superpowers/specs/2026-07-07-sqlite-chromadb-knowledge-design.md
+/mnt/e/webappgithub/nagare/frontend/.github/workflows/ci.yml
+/mnt/e/webappgithub/nagare/frontend/README.md
+/mnt/e/webappgithub/nagare/frontend/pnpm-workspace.yaml
