@@ -1,20 +1,44 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from '#app'
-import { Paperclip, ArrowUp } from '@lucide/vue'
+import { Paperclip, ArrowUp, Loader2 } from '@lucide/vue'
 
 const value = ref('')
 const router = useRouter()
+const creating = ref(false)
+const mode = useState<'chat' | 'agent'>('composer-mode', () => 'chat')
 
-const submit = () => {
+const submit = async () => {
   const text = value.value.trim()
-  if (!text) return
-  router.push(`/chat?q=${encodeURIComponent(text)}`)
+  if (!text || creating.value) return
+
+  creating.value = true
+  try {
+    const config = useRuntimeConfig()
+    // Create a new session via the backend API
+    const session = await $fetch('/api/session', {
+      method: 'POST',
+      baseURL: config.public.apiBase,
+      body: {
+        name: text.length > 48 ? `${text.slice(0, 45)}...` : text,
+        mode: mode.value
+      }
+    }) as { id: string }
+
+    // Redirect to the dedicated session page with the initial query
+    router.push(`/session/${session.id}?q=${encodeURIComponent(text)}`)
+  } catch {
+    // Fallback: just go to home if session creation fails
+    router.push('/')
+  } finally {
+    creating.value = false
+    value.value = ''
+  }
 }
 
 const handleKeyDown = (e: KeyboardEvent) => {
   if (e.key === 'Enter' && !e.shiftKey) {
-    if (e.isComposing) return
+    if (e.isComposing || creating.value) return
     e.preventDefault()
     submit()
   }
@@ -33,6 +57,37 @@ const handleKeyDown = (e: KeyboardEvent) => {
         @keydown="handleKeyDown"
       />
       <div class="flex items-center justify-end px-4 py-3 gap-3 bg-white">
+        <div class="mr-auto bg-stone-100 dark:bg-stone-800 rounded-lg p-1 flex items-center gap-1">
+          <button
+            class="px-3 py-1 text-sm font-medium rounded-md transition-all"
+            :class="[
+              mode === 'chat'
+                ? 'bg-white dark:bg-stone-700 shadow-sm text-stone-900 dark:text-stone-100'
+                : 'text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300',
+              creating ? 'opacity-50 cursor-not-allowed' : ''
+            ]"
+            :disabled="creating"
+            aria-label="Chat Mode"
+            @click="mode = 'chat'"
+          >
+            Chat
+          </button>
+          <button
+            class="px-3 py-1 text-sm font-medium rounded-md transition-all"
+            :class="[
+              mode === 'agent'
+                ? 'bg-white dark:bg-stone-700 shadow-sm text-stone-900 dark:text-stone-100'
+                : 'text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300',
+              creating ? 'opacity-50 cursor-not-allowed' : ''
+            ]"
+            :disabled="creating"
+            aria-label="Agent Mode"
+            @click="mode = 'agent'"
+          >
+            Agent
+          </button>
+        </div>
+
         <button
           class="p-2 text-stone-400 hover:text-stone-600 transition-colors"
           aria-label="Attach file"
@@ -43,11 +98,18 @@ const handleKeyDown = (e: KeyboardEvent) => {
           />
         </button>
         <button
-          class="flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-colors"
+          class="flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-wait text-white shadow-sm transition-colors"
           aria-label="Send message"
+          :disabled="creating"
           @click="submit"
         >
+          <Loader2
+            v-if="creating"
+            :size="20"
+            class="animate-spin"
+          />
           <ArrowUp
+            v-else
             :size="20"
             :stroke-width="2"
           />
