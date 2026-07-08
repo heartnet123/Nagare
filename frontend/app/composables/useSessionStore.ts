@@ -11,15 +11,11 @@ export const useSessionStore = () => {
 
   const recentSessions = computed(() => sessions.value.slice(0, 5))
 
-  let loaded = false
-
   async function loadSessions() {
-    if (loaded && sessions.value.length > 0) return
     try {
       const api = useApi()
       const res = await api.sessions.list()
       sessions.value = res.sessions
-      loaded = true
     } catch (err) {
       console.error('Failed to load sessions:', err)
     }

@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import {
-  Home,
   SquarePen,
   Waves,
   X,
@@ -22,7 +21,9 @@ const emit = defineEmits<{
 }>()
 
 const route = useRoute()
-const { recentSessions, loadSessions, chatDrawerOpen, drawerSessionId } = useSessionStore()
+const showAllSessions = ref(false)
+const { sessions, recentSessions, loadSessions, chatDrawerOpen, drawerSessionId } = useSessionStore()
+const sidebarSessions = computed(() => showAllSessions.value ? sessions.value : recentSessions.value)
 
 // Auto-load sessions once
 if (import.meta.client && recentSessions.value.length === 0) {
@@ -35,9 +36,7 @@ const isActive = (href: string) => {
 }
 
 const isNewChatLinkActive = computed(() => {
-  if (route.path === '/chat') {
-    return !route.query.session
-  }
+  if (route.path === '/') return true
   return chatDrawerOpen.value && !drawerSessionId.value
 })
 
@@ -50,11 +49,8 @@ const isRecentChatActive = (sessionId: string) => {
 
 const handleNewChatClick = (e: MouseEvent) => {
   emit('closeMobile')
-  if (route.path !== '/chat') {
-    e.preventDefault()
-    chatDrawerOpen.value = true
-    drawerSessionId.value = null
-  }
+  chatDrawerOpen.value = false
+  drawerSessionId.value = null
 }
 
 const handleRecentChatClick = (e: MouseEvent, sessionId: string) => {
@@ -122,30 +118,9 @@ const handleRecentChatClick = (e: MouseEvent, sessionId: string) => {
 
       <div class="flex-1 overflow-y-auto py-2 space-y-6 hide-scrollbar px-4">
         <div class="space-y-1">
-          <!-- Home Link -->
+          <!-- New Chat Link -->
           <NuxtLink
             to="/"
-            class="flex items-center w-full px-3 py-2.5 rounded-xl transition-all duration-200"
-            :class="[
-              isActive('/') ? 'bg-white shadow-sm border border-stone-200 text-stone-900' : 'text-stone-500 hover:bg-stone-200/50 hover:text-stone-800',
-              !open && 'justify-center'
-            ]"
-            @click="emit('closeMobile')"
-          >
-            <Home
-              :size="18"
-              :stroke-width="1.5"
-              class="shrink-0"
-            />
-            <span
-              v-if="open"
-              class="ml-3 text-sm font-medium truncate"
-            >Home</span>
-          </NuxtLink>
-
-          <!-- Chat Link -->
-          <NuxtLink
-            to="/chat"
             class="flex items-center justify-between w-full px-3 py-2.5 rounded-xl transition-all duration-200"
             :class="[
               isNewChatLinkActive ? 'bg-white shadow-sm border border-stone-200 text-stone-900' : 'text-stone-600 hover:bg-stone-200/50',
@@ -175,12 +150,19 @@ const handleRecentChatClick = (e: MouseEvent, sessionId: string) => {
 
         <!-- Recent Chats (visible when sidebar is open and active chats exist) -->
         <div v-if="open && recentSessions.length > 0" class="space-y-1">
-          <div class="px-3 mb-2 text-[11px] font-semibold tracking-wider text-stone-400 dark:text-stone-500 uppercase">
-            Recent Chats
+          <div class="px-3 mb-2 flex items-center justify-between gap-2 text-[11px] font-semibold tracking-wider text-stone-400 dark:text-stone-500 uppercase">
+            <span>Conversations</span>
+            <button
+              v-if="sessions.length > recentSessions.length"
+              class="normal-case tracking-normal text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+              @click="showAllSessions = !showAllSessions"
+            >
+              {{ showAllSessions ? 'Show 5' : 'See all' }}
+            </button>
           </div>
           <div class="space-y-0.5">
             <NuxtLink
-              v-for="s in recentSessions"
+              v-for="s in sidebarSessions"
               :key="s.id"
               :to="`/chat?session=${s.id}`"
               class="flex items-center w-full px-3 py-2 rounded-xl transition-all duration-200 group text-stone-500 dark:text-stone-400 hover:bg-stone-200/50 dark:hover:bg-stone-800/30 hover:text-stone-800 dark:hover:text-stone-200"

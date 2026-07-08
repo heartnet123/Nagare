@@ -130,7 +130,7 @@ onMounted(async () => {
           <NuxtLink
             v-for="s in recentSessions"
             :key="s.id"
-            :to="`/chat?session=${s.id}`"
+            :to="`/session/${s.id}`"
             class="flex flex-col p-4 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900/40 hover:border-blue-500 dark:hover:border-blue-500/80 hover:shadow-sm transition-all text-left group"
           >
             <div class="flex items-center gap-2 mb-2 text-stone-400 dark:text-stone-500 text-xs">

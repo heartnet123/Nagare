@@ -10,8 +10,8 @@ export const useApiSessions = () => {
     listArchived: (search?: string) =>
       $fetch<ApiListResponse<Session>>('/api/sessions/archived', { baseURL, query: { search } }),
     create: (data: { name?: string; model?: string; endpoint_url?: string }) =>
-      $fetch<any>('/api/session', { method: 'POST', body: data, baseURL }),
-    get: (sid: string) => $fetch<any>(`/api/session/${sid}`, { baseURL }),
+      $fetch<Session>('/api/session', { method: 'POST', body: data, baseURL }),
+    get: (sid: string) => $fetch<Session>(`/api/session/${sid}`, { baseURL }),
     update: (sid: string, data: { name?: string; folder?: string; model?: string }) =>
       $fetch<any>(`/api/session/${sid}`, { method: 'PATCH', body: data, baseURL }),
     delete: (sid: string) =>
@@ -23,6 +23,8 @@ export const useApiSessions = () => {
     toggleImportant: (sid: string, important: boolean) =>
       $fetch<any>(`/api/session/${sid}/important`, { method: 'POST', query: { important }, baseURL }),
     getHistory: (sid: string) =>
-      $fetch<any[]>(`/api/history/${sid}`, { baseURL })
+      $fetch<any[]>(`/api/history/${sid}`, { baseURL }),
+    regenerate: (sid: string, model?: string) =>
+      $fetch<any>('/api/chat/regenerate', { method: 'POST', body: { session_id: sid, model }, baseURL })
   }
 }

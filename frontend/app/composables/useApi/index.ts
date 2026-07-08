@@ -15,6 +15,7 @@ import { useApiSessions } from './sessions'
 import { useApiMcp } from './mcp'
 import { useApiLogs } from './logs'
 import { useApiMonitoring } from './monitoring'
+import { useApiKnowledge } from './knowledge'
 
 export {
   useApiEvaluations,
@@ -24,7 +25,8 @@ export {
   useApiSessions,
   useApiMcp,
   useApiLogs,
-  useApiMonitoring
+  useApiMonitoring,
+  useApiKnowledge
 }
 
 /**
@@ -40,6 +42,7 @@ export const useApi = () => {
   const mcp = useApiMcp()
   const logs = useApiLogs()
   const monitoring = useApiMonitoring()
+  const knowledge = useApiKnowledge()
 
   return {
     evaluations,
@@ -49,6 +52,7 @@ export const useApi = () => {
     sessions,
     mcp,
     logs,
-    monitoring
+    monitoring,
+    knowledge
   }
 }
