@@ -12,7 +12,8 @@ create table if not exists knowledge_documents (
     content_type text not null,
     size_bytes integer not null,
     chunk_count integer not null,
-    created_at text not null
+    created_at text not null,
+    file_type text
 );
 
 create table if not exists knowledge_chunks (
@@ -21,6 +22,7 @@ create table if not exists knowledge_chunks (
     chunk_index integer not null,
     text text not null,
     created_at text not null,
+    page_number integer,
     foreign key (document_id) references knowledge_documents(id) on delete cascade
 );
 
@@ -42,7 +44,8 @@ create table if not exists sessions (
     created_at text not null,
     updated_at text not null,
     last_accessed text,
-    last_message_at text
+    last_message_at text,
+    mode text
 );
 
 create table if not exists chat_messages (
@@ -79,4 +82,21 @@ def connect_db(data_dir: Path | None = None) -> sqlite3.Connection:
 
 def init_db(conn: sqlite3.Connection) -> None:
     conn.executescript(SCHEMA)
+    # Perform schema migrations / upgrades safely
+    cursor = conn.cursor()
+    cursor.execute("PRAGMA table_info(knowledge_chunks)")
+    columns = [row["name"] for row in cursor.fetchall()]
+    if "page_number" not in columns:
+        conn.execute("ALTER TABLE knowledge_chunks ADD COLUMN page_number INTEGER")
+        
+    cursor.execute("PRAGMA table_info(knowledge_documents)")
+    columns = [row["name"] for row in cursor.fetchall()]
+    if "file_type" not in columns:
+        conn.execute("ALTER TABLE knowledge_documents ADD COLUMN file_type TEXT")
+
+    cursor.execute("PRAGMA table_info(sessions)")
+    columns = [row["name"] for row in cursor.fetchall()]
+    if "mode" not in columns:
+        conn.execute("ALTER TABLE sessions ADD COLUMN mode TEXT")
     conn.commit()
+

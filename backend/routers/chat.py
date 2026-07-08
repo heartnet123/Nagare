@@ -49,28 +49,42 @@ async def event_stream(payload: ChatStreamRequest) -> AsyncIterator[str]:
         settings = AgentSettings(settings.base_url, settings.api_key, settings.model, payload.max_rounds)
 
     sm = _session_manager
+    session_mode = None
     if sm and payload.session_id:
         try:
+            session = None
             try:
-                sm.get_session(payload.session_id)
+                session = sm.get_session(payload.session_id)
             except KeyError:
-                sm.create_session(
+                session = sm.create_session(
                     session_id=payload.session_id,
                     name="New Chat",
                     model=payload.model or settings.model,
                     endpoint_url=settings.base_url,
                 )
-            for msg in payload.messages:
-                if msg.role == 'user':
-                    sm.add_message(payload.session_id, msg.role, msg.content, metadata={"source": "user"})
+            if session:
+                session_mode = session.get("mode")
+            last_user = next((msg for msg in reversed(payload.messages) if msg.role == 'user'), None)
+            existing_messages = session.get("messages", []) if session else []
+            last_saved = existing_messages[-1] if existing_messages else None
+            if last_user and (
+                not last_saved
+                or last_saved.get("role") != "user"
+                or last_saved.get("content") != last_user.content
+            ):
+                sm.add_message(payload.session_id, 'user', last_user.content, metadata={"source": "user"})
         except Exception as exc:
             import logging
             logging.getLogger(__name__).warning(f"Failed to persist user message: {exc}")
 
+    is_chat_mode = (session_mode == 'chat')
+    if is_chat_mode:
+        settings = AgentSettings(settings.base_url, settings.api_key, settings.model, 1)
+
     assistant_buffer = ''
     try:
         messages = [message.model_dump() for message in payload.messages]
-        async for item in stream_agent(messages, settings):
+        async for item in stream_agent(messages, settings, tools=not is_chat_mode):
             event = item['event']
             data = item['data']
 
@@ -118,6 +132,66 @@ async def event_stream(payload: ChatStreamRequest) -> AsyncIterator[str]:
             logging.getLogger(__name__).warning(f"Failed to persist assistant message: {exc}")
 
 
+class RegenerateRequest(BaseModel):
+    session_id: str
+    model: str | None = None
+    max_rounds: int | None = Field(default=None, ge=1, le=20)
+
+
 @router.post('/stream')
 async def chat_stream(payload: ChatStreamRequest):
     return StreamingResponse(event_stream(payload), media_type='text/event-stream')
+
+
+@router.post('/regenerate')
+async def chat_regenerate(payload: RegenerateRequest):
+    sm = _session_manager
+    if not sm:
+        from fastapi import HTTPException
+        raise HTTPException(503, "Session manager not initialized")
+
+    try:
+        messages = sm.get_messages(payload.session_id)
+    except KeyError:
+        from fastapi import HTTPException
+        raise HTTPException(404, f"Session '{payload.session_id}' not found")
+
+    if not messages:
+        from fastapi import HTTPException
+        raise HTTPException(400, "No message history to regenerate")
+
+    # Find last user message index
+    last_user_idx = -1
+    for idx, msg in enumerate(messages):
+        # We check metadata source to make sure we don't treat tool output as user message
+        if msg['role'] == 'user' and msg.get('metadata', {}).get('source') == 'user':
+            last_user_idx = idx
+
+    if last_user_idx == -1:
+        # Fallback to any user role message
+        for idx, msg in enumerate(messages):
+            if msg['role'] == 'user':
+                last_user_idx = idx
+
+    if last_user_idx == -1:
+        from fastapi import HTTPException
+        raise HTTPException(400, "No user message found to regenerate from")
+
+    # Keep history up to that user message
+    cleaned = messages[:last_user_idx + 1]
+
+    # Persist the cleaned messages list
+    sm.replace_messages(payload.session_id, cleaned)
+
+    # Map to ChatMessage Pydantic list
+    chat_messages = []
+    for m in cleaned:
+        chat_messages.append(ChatMessage(role=m['role'], content=m['content']))
+
+    stream_payload = ChatStreamRequest(
+        messages=chat_messages,
+        model=payload.model,
+        max_rounds=payload.max_rounds,
+        session_id=payload.session_id
+    )
+    return StreamingResponse(event_stream(stream_payload), media_type='text/event-stream')

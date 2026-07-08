@@ -112,6 +112,7 @@ async def create_session(body: SessionCreateRequest):
         name=body.name or "New Chat",
         model=body.model or "",
         endpoint_url=body.endpoint_url or "",
+        mode=body.mode or "chat",
     )
     return _session_to_response(session)
 

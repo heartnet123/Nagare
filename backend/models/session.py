@@ -47,6 +47,7 @@ class SessionCreateRequest(BaseModel):
     name: str = "New Chat"
     model: str = ""
     endpoint_url: str = ""
+    mode: Optional[str] = "chat"
 
 
 class SessionUpdateRequest(BaseModel):
