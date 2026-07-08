@@ -20,6 +20,10 @@ class McpConfig:
         servers = data.get('servers', {})
         return servers if isinstance(servers, dict) else {}
 
+    def save(self, servers: dict):
+        self.path.write_text(json.dumps({'servers': servers}, indent=2), encoding='utf-8')
+
+
 
 class McpClient:
     def __init__(self, config: McpConfig):
