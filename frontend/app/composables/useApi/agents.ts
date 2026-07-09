@@ -9,6 +9,10 @@ export const useApiAgents = () => {
     get: (id: string) => $fetch<Agent>(`/api/agents/${id}`, { baseURL }),
     create: (data: Partial<Agent>) =>
       $fetch<Agent>('/api/agents', { method: 'POST', body: data, baseURL }),
+    update: (id: string, data: Partial<Agent>) =>
+      $fetch<Agent>(`/api/agents/${id}`, { method: 'PUT', body: data, baseURL }),
+    delete: (id: string) =>
+      $fetch(`/api/agents/${id}`, { method: 'DELETE', baseURL }),
     listSkills: () => $fetch<Skill[]>('/api/agents/skills', { baseURL })
   }
 }

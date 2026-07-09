@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import {
   SquarePen,
@@ -7,8 +7,12 @@ import {
   X,
   ArrowRight,
   Command,
-  MessageSquare
+  MessageSquare,
+  MoreVertical,
+  Pencil,
+  Trash2
 } from '@lucide/vue'
+import type { DropdownMenuItem } from '@nuxt/ui'
 import { navGroups } from '~/utils/nav'
 
 defineProps<{
@@ -22,7 +26,7 @@ const emit = defineEmits<{
 
 const route = useRoute()
 const showAllSessions = ref(false)
-const { sessions, recentSessions, loadSessions, chatDrawerOpen, drawerSessionId } = useSessionStore()
+const { sessions, recentSessions, loadSessions } = useSessionStore()
 const sidebarSessions = computed(() => showAllSessions.value ? sessions.value : recentSessions.value)
 
 // Auto-load sessions once
@@ -30,36 +34,94 @@ if (import.meta.client && recentSessions.value.length === 0) {
   loadSessions()
 }
 
+// Session manipulation state
+const editingSessionId = ref<string | null>(null)
+const editingName = ref('')
+const renameInput = ref<HTMLInputElement[] | null>(null)
+const api = useApi()
+
 const isActive = (href: string) => {
   const pathname = route.path
   return href === '/' ? pathname === '/' : pathname.startsWith(href)
 }
 
 const isNewChatLinkActive = computed(() => {
-  if (route.path === '/') return true
-  return chatDrawerOpen.value && !drawerSessionId.value
+  return route.path === '/'
 })
 
 const isRecentChatActive = (sessionId: string) => {
-  if (route.path === '/chat') {
-    return route.query.session === sessionId
+  if (route.path.startsWith('/session/')) {
+    return route.params.id === sessionId
   }
-  return chatDrawerOpen.value && drawerSessionId.value === sessionId
+  return false
 }
 
 const handleNewChatClick = (e: MouseEvent) => {
   emit('closeMobile')
-  chatDrawerOpen.value = false
-  drawerSessionId.value = null
 }
 
 const handleRecentChatClick = (e: MouseEvent, sessionId: string) => {
   emit('closeMobile')
-  if (route.path !== '/chat') {
-    e.preventDefault()
-    chatDrawerOpen.value = true
-    drawerSessionId.value = sessionId
+  // Simply navigate to the session page - no drawer needed
+}
+
+// Session manipulation functions
+const startRename = (sid: string, name: string) => {
+  editingSessionId.value = sid
+  editingName.value = name
+  nextTick(() => {
+    if (renameInput.value && renameInput.value[0]) {
+      renameInput.value[0].focus()
+      renameInput.value[0].select()
+    }
+  })
+}
+
+const saveRename = async (sid: string) => {
+  if (!editingSessionId.value) return
+  const finalName = editingName.value.trim()
+  editingSessionId.value = null
+  if (!finalName) return
+
+  try {
+    await api.sessions.update(sid, { name: finalName })
+    await loadSessions()
+  } catch (error) {
+    console.error('Failed to rename session:', error)
   }
+}
+
+const cancelRename = () => {
+  editingSessionId.value = null
+  editingName.value = ''
+}
+
+const deleteSession = async (sid: string) => {
+  if (!confirm('Are you sure you want to permanently delete this conversation?')) return
+  try {
+    await api.sessions.delete(sid)
+    await loadSessions()
+  } catch (error) {
+    console.error('Failed to delete session:', error)
+  }
+}
+
+const getSessionMenuItems = (session: { id: string; name: string }): DropdownMenuItem[][] => {
+  return [
+    [
+      {
+        label: 'Rename',
+        icon: 'i-lucide-pencil',
+        onSelect: () => startRename(session.id, session.name)
+      },
+      {
+        label: 'Delete',
+        icon: 'i-lucide-trash-2',
+        color: 'error',
+        onSelect: () => deleteSession(session.id)
+      }
+    ]
+  ]
 }
 </script>
 
@@ -161,25 +223,72 @@ const handleRecentChatClick = (e: MouseEvent, sessionId: string) => {
             </button>
           </div>
           <div class="space-y-0.5">
-            <NuxtLink
+            <div
               v-for="s in sidebarSessions"
               :key="s.id"
-              :to="`/chat?session=${s.id}`"
-              class="flex items-center w-full px-3 py-2 rounded-xl transition-all duration-200 group text-stone-500 dark:text-stone-400 hover:bg-stone-200/50 dark:hover:bg-stone-800/30 hover:text-stone-800 dark:hover:text-stone-200"
-              :class="[
-                isRecentChatActive(s.id)
-                  ? 'bg-white dark:bg-stone-800 shadow-sm border border-stone-200/60 dark:border-stone-700 text-stone-900 dark:text-stone-100'
-                  : ''
-              ]"
-              @click="(e) => handleRecentChatClick(e, s.id)"
+              class="group/item"
             >
-              <MessageSquare
-                :size="15"
-                :stroke-width="1.5"
-                class="shrink-0 text-stone-400 mr-2"
-              />
-              <span class="text-xs font-medium truncate flex-1 leading-none">{{ s.name }}</span>
-            </NuxtLink>
+              <!-- Normal view -->
+              <div
+                v-if="editingSessionId !== s.id"
+                class="flex items-center w-full px-3 py-2 rounded-xl transition-all duration-200 text-stone-500 dark:text-stone-400 hover:bg-stone-200/50 dark:hover:bg-stone-800/30 hover:text-stone-800 dark:hover:text-stone-200"
+                :class="[
+                  isRecentChatActive(s.id)
+                    ? 'bg-white dark:bg-stone-800 shadow-sm border border-stone-200/60 dark:border-stone-700 text-stone-900 dark:text-stone-100'
+                    : ''
+                ]"
+              >
+                <NuxtLink
+                  :to="`/session/${s.id}`"
+                  class="flex items-center flex-1 min-w-0"
+                  @click="(e) => handleRecentChatClick(e, s.id)"
+                >
+                  <MessageSquare
+                    :size="15"
+                    :stroke-width="1.5"
+                    class="shrink-0 text-stone-400 mr-2"
+                  />
+                  <span class="text-xs font-medium truncate flex-1 leading-none">{{ s.name }}</span>
+                </NuxtLink>
+                <UDropdownMenu
+                  :items="getSessionMenuItems(s)"
+                  :ui="{ content: 'w-40' }"
+                  class="opacity-0 group-hover/item:opacity-100 transition-opacity"
+                >
+                  <UButton
+                    color="neutral"
+                    variant="ghost"
+                    size="xs"
+                    class="p-1"
+                    aria-label="Session actions"
+                    @click.stop
+                  >
+                    <MoreVertical :size="14" :stroke-width="1.5" class="text-stone-400" />
+                  </UButton>
+                </UDropdownMenu>
+              </div>
+
+              <!-- Edit view -->
+              <div
+                v-else
+                class="flex items-center w-full px-3 py-2 rounded-xl bg-white dark:bg-stone-800 shadow-sm border border-stone-200/60 dark:border-stone-700"
+              >
+                <MessageSquare
+                  :size="15"
+                  :stroke-width="1.5"
+                  class="shrink-0 text-stone-400 mr-2"
+                />
+                <input
+                  ref="renameInput"
+                  v-model="editingName"
+                  type="text"
+                  class="flex-1 text-xs font-medium bg-transparent border-none outline-none text-stone-900 dark:text-stone-100"
+                  @keydown.enter="saveRename(s.id)"
+                  @keydown.escape="cancelRename"
+                  @blur="saveRename(s.id)"
+                />
+              </div>
+            </div>
           </div>
         </div>
 

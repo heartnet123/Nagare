@@ -6,3 +6,10 @@ export type { Dataset } from './dataset'
 export type { McpServer, McpServerForm } from './mcp'
 export type { NavItem, NavGroup } from './nav'
 export type { SystemMetrics } from './monitoring'
+
+export interface Model {
+  id: string
+  name: string
+  provider: string
+  description?: string
+}

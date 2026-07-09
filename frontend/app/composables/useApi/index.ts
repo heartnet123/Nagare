@@ -16,6 +16,7 @@ import { useApiMcp } from './mcp'
 import { useApiLogs } from './logs'
 import { useApiMonitoring } from './monitoring'
 import { useApiKnowledge } from './knowledge'
+import { useApiModels } from './models'
 
 export {
   useApiEvaluations,
@@ -26,7 +27,8 @@ export {
   useApiMcp,
   useApiLogs,
   useApiMonitoring,
-  useApiKnowledge
+  useApiKnowledge,
+  useApiModels
 }
 
 /**
@@ -43,6 +45,7 @@ export const useApi = () => {
   const logs = useApiLogs()
   const monitoring = useApiMonitoring()
   const knowledge = useApiKnowledge()
+  const models = useApiModels()
 
   return {
     evaluations,
@@ -53,6 +56,7 @@ export const useApi = () => {
     mcp,
     logs,
     monitoring,
-    knowledge
+    knowledge,
+    models
   }
 }

@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Menu, LayoutGrid, ChevronDown, Sun, Moon, Monitor } from '@lucide/vue'
+import { Menu, Sun, Moon, Monitor } from '@lucide/vue'
 
 const { sidebarOpen, mobileMenuOpen, toggleSidebar, openMobileMenu, closeMobileMenu } = useAppStore()
-const { chatDrawerOpen, onNavigateToChat } = useSessionStore()
 
 const colorMode = useColorMode()
 
@@ -18,18 +17,6 @@ function cycleTheme() {
   const idx = order.indexOf(colorMode.preference as typeof order[number])
   colorMode.preference = order[(idx + 1) % 3] as string
 }
-
-const route = useRoute()
-
-// Automatically close the chat drawer when navigating to /chat page
-watch(
-  () => route.path,
-  (newPath) => {
-    if (newPath === '/chat') {
-      onNavigateToChat()
-    }
-  }
-)
 </script>
 
 <template>
@@ -40,19 +27,6 @@ watch(
       :mobile-open="mobileMenuOpen"
       @close-mobile="closeMobileMenu"
     />
-    
-
-    <!-- Sliding Chat Drawer next to Sidebar -->
-    <Transition name="slide">
-      <div
-        v-if="chatDrawerOpen"
-        class="border-r border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-950 flex flex-col shrink-0 relative z-30 overflow-hidden"
-      >
-        <div class="w-[440px] h-full flex flex-col">
-          <ChatChatView :is-in-drawer="true" />
-        </div>
-      </div>
-    </Transition>
 
     <main class="flex-1 flex flex-col min-w-0 overflow-hidden relative">
       <header class="flex items-center justify-between px-6 py-4 shrink-0">
@@ -78,18 +52,7 @@ watch(
             />
           </button>
 
-          <button class="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-stone-200 bg-white shadow-sm text-sm font-medium text-stone-700 hover:bg-stone-50 transition-colors">
-            <LayoutGrid
-              :size="16"
-              :stroke-width="1.5"
-            />
-            Default Workspace
-            <ChevronDown
-              :size="14"
-              :stroke-width="1.5"
-              class="ml-1 text-stone-400"
-            />
-          </button>
+          <WorkspaceDropdown />
         </div>
 
         <div class="flex items-center gap-4">
@@ -110,9 +73,7 @@ watch(
               :stroke-width="1.5"
             />
           </button>
-          <div class="flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white font-medium text-sm shadow-sm">
-            N
-          </div>
+          <UiUserDropdown />
         </div>
       </header>
 
@@ -122,16 +83,3 @@ watch(
     </main>
   </div>
 </template>
-
-<style scoped>
-.slide-enter-active,
-.slide-leave-active {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.slide-enter-from,
-.slide-leave-to {
-  width: 0px;
-  opacity: 0;
-}
-</style>

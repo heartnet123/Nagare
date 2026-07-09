@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import type { Agent, Skill } from '~/types'
-import { Bot, Activity, Plus, X, Save, AlertCircle, CheckCircle, Cpu, Hammer } from '@lucide/vue'
+import { Bot, Activity, Plus, X, Save, Trash2, Edit3, AlertCircle, CheckCircle, Cpu, Hammer } from '@lucide/vue'
 
 definePageMeta({
   layout: 'default'
@@ -16,8 +16,9 @@ const loading = ref(true)
 const error = ref<string | null>(null)
 const successMsg = ref<string | null>(null)
 
-// Form state
+// Form state (shared for create and edit)
 const showForm = ref(false)
+const editingAgent = ref<any>(null) // null = create mode, object = edit mode
 const saving = ref(false)
 const form = reactive({
   name: '',
@@ -27,6 +28,11 @@ const form = reactive({
   system_prompt: '',
   skills: [] as string[]
 })
+
+// Delete confirmation
+const showDeleteConfirm = ref(false)
+const deletingAgent = ref<any>(null)
+const deleting = ref(false)
 
 // Metrics computation
 const totalAgents = computed(() => agents.value.length)
@@ -59,6 +65,7 @@ async function fetchData() {
 }
 
 function openAddForm() {
+  editingAgent.value = null
   form.name = ''
   form.model = 'llama3.1'
   form.type = 'chat'
@@ -68,6 +75,24 @@ function openAddForm() {
   showForm.value = true
   successMsg.value = null
   error.value = null
+}
+
+function openEditForm(agent: any) {
+  editingAgent.value = agent
+  form.name = agent.name
+  form.model = agent.model
+  form.type = agent.type
+  form.status = agent.status
+  form.system_prompt = agent.system_prompt || ''
+  form.skills = [...(agent.skills || [])]
+  showForm.value = true
+  successMsg.value = null
+  error.value = null
+}
+
+function closeForm() {
+  showForm.value = false
+  editingAgent.value = null
 }
 
 async function saveAgent() {
@@ -81,21 +106,61 @@ async function saveAgent() {
 
   saving.value = true
   try {
-    await api.agents.create({
-      name: form.name.trim(),
-      model: form.model.trim(),
-      type: form.type,
-      status: form.status,
-      system_prompt: form.system_prompt.trim(),
-      skills: form.skills
-    })
-    successMsg.value = `Agent "${form.name}" created successfully.`
-    showForm.value = false
+    if (editingAgent.value) {
+      // Edit mode
+      await api.agents.update(editingAgent.value.id, {
+        name: form.name.trim(),
+        model: form.model.trim(),
+        type: form.type,
+        status: form.status,
+        system_prompt: form.system_prompt.trim(),
+        skills: form.skills
+      })
+      successMsg.value = `Agent "${form.name}" updated successfully.`
+    } else {
+      // Create mode
+      await api.agents.create({
+        name: form.name.trim(),
+        model: form.model.trim(),
+        type: form.type,
+        status: form.status,
+        system_prompt: form.system_prompt.trim(),
+        skills: form.skills
+      })
+      successMsg.value = `Agent "${form.name}" created successfully.`
+    }
+    closeForm()
     await fetchData()
   } catch (err: any) {
-    error.value = err.data?.detail || err.message || 'Failed to create agent'
+    error.value = err.data?.detail || err.message || 'Failed to save agent'
   } finally {
     saving.value = false
+  }
+}
+
+function openDeleteConfirm(agent: any) {
+  deletingAgent.value = agent
+  showDeleteConfirm.value = true
+}
+
+function closeDeleteConfirm() {
+  showDeleteConfirm.value = false
+  deletingAgent.value = null
+}
+
+async function confirmDelete() {
+  if (!deletingAgent.value) return
+
+  deleting.value = true
+  try {
+    await api.agents.delete(deletingAgent.value.id)
+    successMsg.value = `Agent "${deletingAgent.value.name}" deleted successfully.`
+    closeDeleteConfirm()
+    await fetchData()
+  } catch (err: any) {
+    error.value = err.data?.detail || err.message || 'Failed to delete agent'
+  } finally {
+    deleting.value = false
   }
 }
 
@@ -244,24 +309,28 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- Latency & Stats -->
-        <div class="flex items-center justify-between gap-4 mt-4 pt-3 border-t border-stone-100 dark:border-stone-800/80 text-xs">
-          <div class="flex gap-6 text-xs">
-            <div class="flex flex-col">
-              <span class="text-stone-400">Total Requests</span>
-              <span class="font-semibold text-stone-800 dark:text-stone-200">
-                {{ (a.requests || 0).toLocaleString() }}
-              </span>
-            </div>
-            <div class="flex flex-col">
-              <span class="text-stone-400">Avg. Latency</span>
-              <span class="font-semibold text-stone-800 dark:text-stone-200">
-                {{ a.latency ? `${Math.round(a.latency)}ms` : '—' }}
-              </span>
-            </div>
+        <!-- Actions & Stats -->
+        <div class="flex items-center justify-between gap-4 mt-4 pt-3 border-t border-stone-100 dark:border-stone-800/80">
+          <!-- Edit/Delete Actions -->
+          <div class="flex items-center gap-2">
+            <button
+              class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
+              @click="openEditForm(a)"
+            >
+              <Edit3 :size="14" />
+              Edit
+            </button>
+            <button
+              class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+              @click="openDeleteConfirm(a)"
+            >
+              <Trash2 :size="14" />
+              Delete
+            </button>
           </div>
+
+          <!-- Sparkline -->
           <div class="w-24 h-8 opacity-60">
-            <!-- Sparkline placeholder using mock load trends -->
             <DashboardSparkline
               :data="[15, 20, 18, 30, a.status === 'active' ? 45 : 0, a.status === 'active' ? 32 : 0, a.status === 'active' ? 40 : 0]"
               :color="a.status === 'active' ? '#3b82f6' : '#a8a29e'"
@@ -281,7 +350,7 @@ onMounted(() => {
       <div
         v-if="showForm"
         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-sm"
-        @click.self="showForm = false"
+        @click.self="closeForm"
       >
         <div
           class="relative w-full max-w-lg p-6 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl shadow-xl space-y-6"
@@ -289,11 +358,11 @@ onMounted(() => {
           <div class="flex items-center justify-between pb-3 border-b border-stone-100 dark:border-stone-800">
             <h3 class="text-base font-semibold text-stone-900 dark:text-stone-100 flex items-center gap-2">
               <Bot :size="18" class="text-blue-500" />
-              Create Custom Agent
+              {{ editingAgent ? 'Edit Agent' : 'Create Custom Agent' }}
             </h3>
             <button
               class="p-1 rounded-lg text-stone-400 hover:text-stone-800 dark:hover:text-stone-100"
-              @click="showForm = false"
+              @click="closeForm"
             >
               <X :size="20" />
             </button>
@@ -410,7 +479,7 @@ onMounted(() => {
               <button
                 type="button"
                 class="px-4 py-2 rounded-xl border border-stone-200 dark:border-stone-800 hover:bg-stone-50 dark:hover:bg-stone-800 text-sm font-medium text-stone-700 dark:text-stone-300 transition-colors"
-                @click="showForm = false"
+                @click="closeForm"
               >
                 Cancel
               </button>
@@ -420,10 +489,54 @@ onMounted(() => {
                 class="flex items-center gap-2 px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium shadow-sm transition-colors"
               >
                 <Save :size="16" />
-                {{ saving ? 'Creating...' : 'Create Agent' }}
+                {{ saving ? 'Saving...' : (editingAgent ? 'Update Agent' : 'Create Agent') }}
               </button>
             </div>
           </form>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- Delete Confirmation Modal -->
+    <Transition name="fade">
+      <div
+        v-if="showDeleteConfirm"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-sm"
+        @click.self="closeDeleteConfirm"
+      >
+        <div
+          class="relative w-full max-w-md p-6 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl shadow-xl space-y-4"
+        >
+          <div class="flex items-center gap-3">
+            <div class="p-2.5 rounded-xl bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400">
+              <Trash2 :size="20" />
+            </div>
+            <div>
+              <h3 class="text-base font-semibold text-stone-900 dark:text-stone-100">Delete Agent</h3>
+              <p class="text-xs text-stone-500 dark:text-stone-400">This action cannot be undone.</p>
+            </div>
+          </div>
+
+          <p class="text-sm text-stone-600 dark:text-stone-300">
+            Are you sure you want to permanently delete <strong>"{{ deletingAgent?.name }}"</strong>?
+          </p>
+
+          <div class="flex justify-end gap-3 pt-2">
+            <button
+              class="px-4 py-2 rounded-xl border border-stone-200 dark:border-stone-800 hover:bg-stone-50 dark:hover:bg-stone-800 text-sm font-medium text-stone-700 dark:text-stone-300 transition-colors"
+              @click="closeDeleteConfirm"
+            >
+              Cancel
+            </button>
+            <button
+              :disabled="deleting"
+              class="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-medium shadow-sm transition-colors disabled:opacity-50"
+              @click="confirmDelete"
+            >
+              <Trash2 :size="14" />
+              {{ deleting ? 'Deleting...' : 'Delete' }}
+            </button>
+          </div>
         </div>
       </div>
     </Transition>

@@ -13,7 +13,16 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
-      apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:8000'
+      apiBase: process.env.NUXT_PUBLIC_API_BASE || ''
+    }
+  },
+
+  // Proxy /api requests to the FastAPI backend.
+  // This keeps cookies on the same origin (localhost:3000) so httpOnly
+  // cookies and CSRF tokens work correctly.
+  routeRules: {
+    '/api/**': {
+      proxy: 'http://localhost:8000/api/**'
     }
   },
 

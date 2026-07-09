@@ -5,6 +5,29 @@ from pathlib import Path
 
 
 SCHEMA = '''
+create table if not exists users (
+    id text primary key,
+    username text unique not null,
+    email text unique not null,
+    password_hash text not null,
+    created_at text not null
+);
+
+create table if not exists agents (
+    id text primary key,
+    user_id text not null,
+    name text not null,
+    model text not null,
+    system_prompt text not null default '',
+    skills text default '[]',
+    status text default 'active',
+    created_at text not null,
+    updated_at text not null,
+    foreign key (user_id) references users(id) on delete cascade
+);
+
+create index if not exists idx_agents_user_id on agents(user_id);
+
 create table if not exists knowledge_documents (
     id text primary key,
     title text not null,

@@ -5,5 +5,5 @@ definePageMeta({
 </script>
 
 <template>
-  <ChatChatView />
+  <ChatView />
 </template>
