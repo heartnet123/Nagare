@@ -86,6 +86,34 @@ on chat_messages(session_id, timestamp);
 
 create index if not exists idx_sessions_active
 on sessions(archived, last_accessed);
+
+create table if not exists models (
+    id text primary key,
+    name text not null,
+    provider text not null,
+    description text,
+    input_cost_per_1m real not null default 0.0,
+    output_cost_per_1m real not null default 0.0,
+    max_context_length integer default 4096,
+    is_active integer not null default 1,
+    config text default '{}',
+    created_at text not null,
+    updated_at text not null
+);
+
+create table if not exists model_usage (
+    id text primary key,
+    model_id text not null,
+    session_id text,
+    input_tokens integer not null default 0,
+    output_tokens integer not null default 0,
+    cost real not null default 0.0,
+    timestamp text not null,
+    foreign key (model_id) references models(id) on delete cascade
+);
+
+create index if not exists idx_model_usage_model_id on model_usage(model_id);
+create index if not exists idx_model_usage_timestamp on model_usage(timestamp);
 '''
 
 
@@ -121,5 +149,35 @@ def init_db(conn: sqlite3.Connection) -> None:
     columns = [row["name"] for row in cursor.fetchall()]
     if "mode" not in columns:
         conn.execute("ALTER TABLE sessions ADD COLUMN mode TEXT")
+
+    conn.executescript('''
+    create table if not exists models (
+        id text primary key,
+        name text not null,
+        provider text not null,
+        description text,
+        input_cost_per_1m real not null default 0.0,
+        output_cost_per_1m real not null default 0.0,
+        max_context_length integer default 4096,
+        is_active integer not null default 1,
+        config text default '{}',
+        created_at text not null,
+        updated_at text not null
+    );
+
+    create table if not exists model_usage (
+        id text primary key,
+        model_id text not null,
+        session_id text,
+        input_tokens integer not null default 0,
+        output_tokens integer not null default 0,
+        cost real not null default 0.0,
+        timestamp text not null,
+        foreign key (model_id) references models(id) on delete cascade
+    );
+
+    create index if not exists idx_model_usage_model_id on model_usage(model_id);
+    create index if not exists idx_model_usage_timestamp on model_usage(timestamp);
+    ''')
     conn.commit()
 

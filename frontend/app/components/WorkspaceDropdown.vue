@@ -20,7 +20,7 @@ async function loadModels() {
     models.value = await api.models.list()
     // Set default selected model if none selected
     if (!selectedModel.value && models.value.length > 0) {
-      selectedModel.value = models.value[0]
+      selectedModel.value = models.value[0] || null
     }
   } catch (error) {
     console.error('Failed to load models:', error)
@@ -143,14 +143,26 @@ onMounted(() => {
         </div>
 
         <!-- Models Tab -->
-        <div v-if="activeTab === 'models'" class="max-h-64 overflow-y-auto">
-          <div v-if="loadingModels" class="p-4 text-center text-stone-400 text-sm">
+        <div
+          v-if="activeTab === 'models'"
+          class="max-h-64 overflow-y-auto"
+        >
+          <div
+            v-if="loadingModels"
+            class="p-4 text-center text-stone-400 text-sm"
+          >
             Loading models...
           </div>
-          <div v-else-if="models.length === 0" class="p-4 text-center text-stone-400 text-sm">
+          <div
+            v-else-if="models.length === 0"
+            class="p-4 text-center text-stone-400 text-sm"
+          >
             No models available
           </div>
-          <div v-else class="p-2">
+          <div
+            v-else
+            class="p-2"
+          >
             <button
               v-for="model in models"
               :key="model.id"
@@ -163,15 +175,33 @@ onMounted(() => {
               @click="selectModel(model)"
             >
               <div class="p-2 rounded-lg bg-stone-100 dark:bg-stone-800">
-                <Cpu :size="16" class="text-stone-500" />
+                <Cpu
+                  :size="16"
+                  class="text-stone-500"
+                />
               </div>
               <div class="flex-1 min-w-0">
-                <div class="text-sm font-medium truncate">{{ model.name }}</div>
-                <div class="text-xs text-stone-400 truncate">{{ model.provider }}</div>
+                <div class="text-sm font-medium truncate">
+                  {{ model.name }}
+                </div>
+                <div class="text-xs text-stone-400 truncate">
+                  {{ model.provider }}
+                </div>
               </div>
-              <div v-if="selectedModel?.id === model.id" class="text-blue-500">
-                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+              <div
+                v-if="selectedModel?.id === model.id"
+                class="text-blue-500"
+              >
+                <svg
+                  class="w-5 h-5"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                    clip-rule="evenodd"
+                  />
                 </svg>
               </div>
             </button>
@@ -179,13 +209,25 @@ onMounted(() => {
         </div>
 
         <!-- Agents Tab -->
-        <div v-if="activeTab === 'agents'" class="max-h-64 overflow-y-auto">
-          <div v-if="loadingAgents" class="p-4 text-center text-stone-400 text-sm">
+        <div
+          v-if="activeTab === 'agents'"
+          class="max-h-64 overflow-y-auto"
+        >
+          <div
+            v-if="loadingAgents"
+            class="p-4 text-center text-stone-400 text-sm"
+          >
             Loading agents...
           </div>
-          <div v-else-if="agents.length === 0" class="p-4">
+          <div
+            v-else-if="agents.length === 0"
+            class="p-4"
+          >
             <div class="text-center">
-              <Bot :size="32" class="mx-auto text-stone-300 dark:text-stone-600 mb-2" />
+              <Bot
+                :size="32"
+                class="mx-auto text-stone-300 dark:text-stone-600 mb-2"
+              />
               <p class="text-sm text-stone-500 dark:text-stone-400 mb-3">
                 No agents created yet
               </p>
@@ -199,7 +241,10 @@ onMounted(() => {
               </NuxtLink>
             </div>
           </div>
-          <div v-else class="p-2">
+          <div
+            v-else
+            class="p-2"
+          >
             <button
               v-for="agent in agents"
               :key="agent.id"
@@ -212,15 +257,33 @@ onMounted(() => {
               @click="selectAgent(agent)"
             >
               <div class="p-2 rounded-lg bg-stone-100 dark:bg-stone-800">
-                <Bot :size="16" class="text-stone-500" />
+                <Bot
+                  :size="16"
+                  class="text-stone-500"
+                />
               </div>
               <div class="flex-1 min-w-0">
-                <div class="text-sm font-medium truncate">{{ agent.name }}</div>
-                <div class="text-xs text-stone-400 truncate">{{ agent.model }}</div>
+                <div class="text-sm font-medium truncate">
+                  {{ agent.name }}
+                </div>
+                <div class="text-xs text-stone-400 truncate">
+                  {{ agent.model }}
+                </div>
               </div>
-              <div v-if="selectedAgent?.id === agent.id" class="text-blue-500">
-                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+              <div
+                v-if="selectedAgent?.id === agent.id"
+                class="text-blue-500"
+              >
+                <svg
+                  class="w-5 h-5"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                    clip-rule="evenodd"
+                  />
                 </svg>
               </div>
             </button>
