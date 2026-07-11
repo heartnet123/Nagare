@@ -49,3 +49,9 @@ logs/
 # --- Local notes & scratch ---
 ROADMAP.md
 progress.txt
+
+# --- Tools and Generated Artifacts ---
+.omx/
+.playwright-mcp/
+graphify-out/
+
