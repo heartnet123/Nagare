@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime, timezone
 import hashlib
 from pathlib import Path
@@ -11,6 +12,22 @@ from .data import connect_db, default_data_dir
 CHUNK_SIZE = 1200
 CHUNK_OVERLAP = 160
 TEXT_EXTENSIONS = {'.txt', '.md', '.json', '.jsonl', '.csv', '.pdf', '.docx'}
+
+
+@dataclass(frozen=True, slots=True)
+class KnowledgeChunk:
+    id: str
+    document_id: str
+    chunk_index: int
+    text: str
+    created_at: str
+    page_number: int | None
+
+
+@dataclass(frozen=True, slots=True)
+class KnowledgeChunkPage:
+    items: list[KnowledgeChunk]
+    total: int
 
 
 class KnowledgeStore:
@@ -138,6 +155,38 @@ class KnowledgeStore:
             'select * from knowledge_documents order by created_at desc'
         ).fetchall()
         return [dict(row) for row in rows]
+
+    def list_chunks(self, document_id: str, offset: int, limit: int) -> KnowledgeChunkPage | None:
+        if self._document(document_id) is None:
+            return None
+        total = self.conn.execute(
+            'select count(*) from knowledge_chunks where document_id = ?',
+            (document_id,),
+        ).fetchone()[0]
+        rows = self.conn.execute(
+            '''
+            select id, document_id, chunk_index, text, created_at, page_number
+            from knowledge_chunks
+            where document_id = ?
+            order by chunk_index asc, id asc
+            limit ? offset ?
+            ''',
+            (document_id, limit, offset),
+        ).fetchall()
+        return KnowledgeChunkPage(
+            items=[
+                KnowledgeChunk(
+                    id=row['id'],
+                    document_id=row['document_id'],
+                    chunk_index=row['chunk_index'],
+                    text=row['text'],
+                    created_at=row['created_at'],
+                    page_number=row['page_number'],
+                )
+                for row in rows
+            ],
+            total=total,
+        )
 
     def search(self, query: str, limit: int = 5) -> list[dict]:
         query = query.strip()
