@@ -26,3 +26,14 @@ class Token(BaseModel):
     """JWT token response."""
     access_token: str
     token_type: str = "bearer"
+
+
+class UserProfile(BaseModel):
+    id: str
+    username: str
+    display_name: str | None = None
+    avatar_url: str | None = None
+    bio: str | None = None
+    email: str | None = None
+    created_at: str
+    updated_at: str | None = None

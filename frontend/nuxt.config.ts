@@ -11,6 +11,13 @@ export default defineNuxtConfig({
 
   css: ['~/assets/css/main.css'],
 
+  colorMode: {
+    preference: 'system',
+    fallback: 'light',
+    classSuffix: '',
+    storageKey: 'nagare-color-mode',
+    dataValue: 'theme'
+  },
   runtimeConfig: {
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE || ''
@@ -28,14 +35,6 @@ export default defineNuxtConfig({
 
   compatibilityDate: '2025-01-15',
 
-  colorMode: {
-    preference: 'system',
-    fallback: 'light',
-    classSuffix: '',
-    storageKey: 'nagare-color-mode',
-    dataValue: 'theme'
-  },
-
   eslint: {
     config: {
       stylistic: {
@@ -43,5 +42,9 @@ export default defineNuxtConfig({
         braceStyle: '1tbs'
       }
     }
+  },
+  icon: {
+    localApiEndpoint: '/_nuxt_icon'
   }
+
 })

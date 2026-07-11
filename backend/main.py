@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from routers import evaluations, agents, datasets, monitoring, logs, chat, mcp, memory, agent_config, sessions, history, knowledge, auth, models
+from routers import evaluations, agents, datasets, monitoring, logs, chat, mcp, memory, agent_config, sessions, history, knowledge, auth, models, settings
 from middleware.error_handler import (
     http_error_handler,
     validation_error_handler,
@@ -51,6 +51,7 @@ app.include_router(sessions.router)
 app.include_router(history.router)
 app.include_router(knowledge.router)
 app.include_router(models.router)
+app.include_router(settings.router)
 
 
 
