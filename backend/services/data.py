@@ -114,6 +114,16 @@ create table if not exists model_usage (
 
 create index if not exists idx_model_usage_model_id on model_usage(model_id);
 create index if not exists idx_model_usage_timestamp on model_usage(timestamp);
+
+create table if not exists rag_connections (
+    id text primary key,
+    name text not null,
+    base_url text not null,
+    model text not null,
+    api_key_encrypted blob not null,
+    created_at text not null,
+    updated_at text not null
+);
 '''
 
 
