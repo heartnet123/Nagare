@@ -37,6 +37,16 @@ export interface ThemeSettings {
   font_size: 'small' | 'medium' | 'large'
 }
 
+export interface RagConnection {
+  id: string
+  name: string
+  base_url: string
+  model: string
+  api_key_set: boolean
+  created_at: string
+  updated_at: string
+}
+
 export interface UserPreferences {
   notifications: NotificationPreferences
   theme: ThemeSettings
@@ -66,6 +76,11 @@ export const useApiSettings = () => {
       $fetch<ThemeSettings>('/api/settings/theme', { method: 'PUT', body: data, baseURL }),
     getPreferences: () => $fetch<UserPreferences>('/api/settings/preferences', { baseURL }),
     updatePreferences: (data: Partial<UserPreferences>) =>
-      $fetch<UserPreferences>('/api/settings/preferences', { method: 'PUT', body: data, baseURL })
+      $fetch<UserPreferences>('/api/settings/preferences', { method: 'PUT', body: data, baseURL }),
+    listRagConnections: () => $fetch<RagConnection[]>('/api/settings/rag-connections', { baseURL }),
+    createRagConnection: (data: { name: string, base_url: string, model: string, api_key: string }) =>
+      $fetch<RagConnection>('/api/settings/rag-connections', { method: 'POST', body: data, baseURL }),
+    testRagConnection: (data: { base_url: string, model: string, api_key: string }) =>
+      $fetch<{ ok: boolean, message: string }>('/api/settings/rag-connections/test', { method: 'POST', body: data, baseURL })
   }
 }

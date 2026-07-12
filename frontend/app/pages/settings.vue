@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { User, Key, Bell, Palette } from '@lucide/vue'
+import { User, Key, Bell, Palette, Cable } from '@lucide/vue'
 
 definePageMeta({ layout: 'default' })
 
@@ -8,6 +8,7 @@ const activeTab = ref('profile')
 const tabs = [
   { slot: 'profile', label: 'Profile', icon: User },
   { slot: 'api-keys', label: 'API Keys', icon: Key },
+  { slot: 'rag', label: 'RAG', icon: Cable },
   { slot: 'notifications', label: 'Notifications', icon: Bell },
   { slot: 'theme', label: 'Theme', icon: Palette }
 ]
@@ -33,6 +34,9 @@ const tabs = [
       </template>
       <template #api-keys>
         <ApiKeysTab />
+      </template>
+      <template #rag>
+        <RagConnectionsTab />
       </template>
       <template #notifications>
         <NotificationsTab />
