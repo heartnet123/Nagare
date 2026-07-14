@@ -8,7 +8,7 @@ SCHEMA = '''
 create table if not exists users (
     id text primary key,
     username text unique not null,
-    email text unique not null,
+    email text unique,
     password_hash text not null,
     created_at text not null
 );

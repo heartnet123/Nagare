@@ -26,7 +26,7 @@ class UserManager:
         try:
             conn.execute(
                 "INSERT INTO users (id, username, email, password_hash, created_at) VALUES (?, ?, ?, ?, ?)",
-                (user_id, username, "", password_hash, now),
+                (user_id, username, None, password_hash, now),
             )
             conn.commit()
             return {

@@ -4,25 +4,18 @@ from __future__ import annotations
 
 import os
 from datetime import datetime, timedelta, timezone
-from types import SimpleNamespace
 from typing import Optional
 
 import bcrypt
 from fastapi import Depends, Header, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 
-if not hasattr(bcrypt, "__about__"):
-    setattr(bcrypt, "__about__", SimpleNamespace(__version__=bcrypt.__version__))
 
 # Configuration
 SECRET_KEY = os.getenv("SECRET_KEY", "nagare-dev-secret-key-change-in-production")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
-
-# Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # OAuth2 scheme
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
@@ -30,12 +23,15 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=Fals
 
 def hash_password(password: str) -> str:
     """Hash a password for storage."""
-    return pwd_context.hash(password)
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("ascii")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against its hash."""
-    return pwd_context.verify(plain_password, hashed_password)
+    return bcrypt.checkpw(
+        plain_password.encode("utf-8"),
+        hashed_password.encode("ascii"),
+    )
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:

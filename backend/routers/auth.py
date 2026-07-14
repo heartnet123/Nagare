@@ -1,6 +1,7 @@
 """Authentication routes — register, login, me."""
 
 import secrets
+import sqlite3
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 
@@ -50,6 +51,11 @@ async def register(user: UserCreate, response: Response):
             password=user.password,
         )
     except ValueError as e:
+        if isinstance(e.__cause__, sqlite3.IntegrityError) and "users.username" in str(e):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Username already taken",
+            ) from e
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),

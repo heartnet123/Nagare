@@ -5,6 +5,9 @@ import pytest
 
 from models.user import UserCreate
 from routers import auth
+from services import user_manager as user_manager_module
+from services.data import connect_db
+from services.user_manager import UserManager
 
 
 class _FakeUserManager:
@@ -29,3 +32,16 @@ async def test_register_returns_token_and_sets_cookies(monkeypatch) -> None:
     token = await auth.register(UserCreate(username="alice", password="password123"), response)
 
     assert token.access_token == captured["access_token"]
+
+
+@pytest.mark.anyio
+async def test_register_accepts_normal_password_with_installed_bcrypt(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(user_manager_module, "connect_db", lambda: connect_db(tmp_path))
+    monkeypatch.setattr(auth, "user_manager", UserManager())
+
+    token = await auth.register(
+        UserCreate(username="bcrypt-user", password="password123"),
+        Response(),
+    )
+
+    assert token.access_token
