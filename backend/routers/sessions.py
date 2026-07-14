@@ -59,6 +59,7 @@ def _session_to_response(s: dict) -> SessionResponse:
         has_documents=s.get("has_documents", False),
         has_images=s.get("has_images", False),
         mode=s.get("mode"),
+        last_message_content=s.get("last_message_content"),
     )
 
 

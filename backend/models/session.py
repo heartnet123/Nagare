@@ -39,6 +39,8 @@ class SessionResponse(BaseModel):
     has_documents: bool = False
     has_images: bool = False
     mode: Optional[str] = None
+    last_message_content: Optional[str] = None
+
 
 
 class SessionCreateRequest(BaseModel):
