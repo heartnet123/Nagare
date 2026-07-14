@@ -10,4 +10,5 @@ export interface Session {
   created_at: string | null
   updated_at: string | null
   folder?: string
+  last_message_content?: string | null
 }

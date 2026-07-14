@@ -28,6 +28,7 @@ export interface ChatMessage {
 }
 
 export function useChatSession(apiBase: string) {
+  const { activeModelName } = useActiveSelection()
   // ── State ──────────────────────────────────────────────────────────────────
   const messages = ref<ChatMessage[]>([]) as Ref<ChatMessage[]>
   const busy = ref(false)
@@ -39,8 +40,8 @@ export function useChatSession(apiBase: string) {
   // ── Helpers ────────────────────────────────────────────────────────────────
 
   function updateAssistant(id: string, patch: Partial<ChatMessage>) {
-    messages.value = messages.value.map((msg) =>
-      msg.id === id ? { ...msg, ...patch } : msg,
+    messages.value = messages.value.map(msg =>
+      msg.id === id ? { ...msg, ...patch } : msg
     )
   }
 
@@ -68,11 +69,11 @@ export function useChatSession(apiBase: string) {
     const parts = buffer.split('\n\n')
     const rest = parts.pop() || ''
     const events = parts.map((part) => {
-      const eventLine = part.split('\n').find((line) => line.startsWith('event: '))
-      const dataLine = part.split('\n').find((line) => line.startsWith('data: '))
+      const eventLine = part.split('\n').find(line => line.startsWith('event: '))
+      const dataLine = part.split('\n').find(line => line.startsWith('data: '))
       return {
         event: eventLine?.slice(7) || 'message',
-        data: dataLine ? JSON.parse(dataLine.slice(6)) : {},
+        data: dataLine ? JSON.parse(dataLine.slice(6)) : {}
       }
     })
     return { events, rest }
@@ -92,7 +93,7 @@ export function useChatSession(apiBase: string) {
             id: msg.id,
             name: toolName,
             input: msg.metadata?.tool_input,
-            status: 'done',
+            status: 'done'
           }
           if (lastAssistant) {
             lastAssistant.toolEvents = lastAssistant.toolEvents || []
@@ -102,14 +103,14 @@ export function useChatSession(apiBase: string) {
               id: crypto.randomUUID(),
               role: 'assistant',
               content: '',
-              toolEvents: [event],
+              toolEvents: [event]
             }
             formatted.push(lastAssistant)
           }
         } else {
           if (lastAssistant && lastAssistant.toolEvents) {
-            const event = lastAssistant.toolEvents.find((e) => e.name === toolName && e.status === 'running')
-              || [...lastAssistant.toolEvents].reverse().find((e) => e.name === toolName)
+            const event = lastAssistant.toolEvents.find(e => e.name === toolName && e.status === 'running')
+              || [...lastAssistant.toolEvents].reverse().find(e => e.name === toolName)
             if (event) {
               event.output = msg.content.replace(/^.*?Tool result for `.*?`:_\n/, '')
               event.status = msg.metadata?.ok !== false ? 'done' : 'error'
@@ -118,7 +119,7 @@ export function useChatSession(apiBase: string) {
                 id: msg.id,
                 name: toolName,
                 output: msg.content,
-                status: msg.metadata?.ok !== false ? 'done' : 'error',
+                status: msg.metadata?.ok !== false ? 'done' : 'error'
               })
             }
           }
@@ -132,8 +133,8 @@ export function useChatSession(apiBase: string) {
           metadata: {
             input_tokens: msg.metadata?.input_tokens,
             output_tokens: msg.metadata?.output_tokens,
-            response_time_ms: msg.metadata?.response_time_ms,
-          },
+            response_time_ms: msg.metadata?.response_time_ms
+          }
         }
         formatted.push(newMsg)
         lastAssistant = msg.role === 'assistant' ? newMsg : null
@@ -173,7 +174,10 @@ export function useChatSession(apiBase: string) {
         const session = await $fetch('/api/session', {
           method: 'POST',
           baseURL: apiBase,
-          body: { name: trimmed.length > 48 ? `${trimmed.slice(0, 45)}...` : trimmed },
+          body: {
+            name: trimmed.length > 48 ? `${trimmed.slice(0, 45)}...` : trimmed,
+            model: activeModelName.value || undefined
+          }
         })
         activeSid = (session as any).id
         currentSessionId.value = activeSid
@@ -190,7 +194,7 @@ export function useChatSession(apiBase: string) {
       role: 'assistant',
       content: '',
       streaming: true,
-      toolEvents: [],
+      toolEvents: []
     })
     busy.value = true
 
@@ -204,12 +208,13 @@ export function useChatSession(apiBase: string) {
         body: JSON.stringify({
           messages: messages.value
             .filter(
-              (msg) => msg.role === 'user' || (msg.role === 'assistant' && msg.content.trim()),
+              msg => msg.role === 'user' || (msg.role === 'assistant' && msg.content.trim())
             )
-            .map((msg) => ({ role: msg.role, content: msg.content })),
+            .map(msg => ({ role: msg.role, content: msg.content })),
           max_rounds: 8,
           session_id: activeSid,
-        }),
+          model: activeModelName.value || undefined
+        })
       })
 
       if (!response.ok || !response.body) throw new Error(`Chat request failed: ${response.status}`)
@@ -227,9 +232,9 @@ export function useChatSession(apiBase: string) {
 
         for (const item of parsed.events) {
           if (item.event === 'delta') {
-            const current = messages.value.find((msg) => msg.id === assistantId)
+            const current = messages.value.find(msg => msg.id === assistantId)
             updateAssistant(assistantId, {
-              content: `${current?.content || ''}${item.data.content || ''}`,
+              content: `${current?.content || ''}${item.data.content || ''}`
             })
           } else if (item.event === 'replace_last') {
             updateAssistant(assistantId, { content: item.data.content || '' })
@@ -238,7 +243,7 @@ export function useChatSession(apiBase: string) {
               id: crypto.randomUUID(),
               name: item.data.name,
               input: item.data.input,
-              status: 'running',
+              status: 'running'
             })
           } else if (item.event === 'tool_result') {
             finishToolEvent(assistantId, item.data.name, item.data.output || '', item.data.ok !== false)
@@ -251,8 +256,8 @@ export function useChatSession(apiBase: string) {
               metadata: {
                 input_tokens: item.data.input_tokens,
                 output_tokens: item.data.output_tokens,
-                response_time_ms: item.data.response_time_ms,
-              },
+                response_time_ms: item.data.response_time_ms
+              }
             })
             busy.value = false
           }
@@ -275,7 +280,7 @@ export function useChatSession(apiBase: string) {
     const activeSid = currentSessionId.value
     if (!activeSid) return
 
-    const idx = messages.value.findIndex((m) => m.id === assistantMsgId)
+    const idx = messages.value.findIndex(m => m.id === assistantMsgId)
     if (idx === -1) return
 
     messages.value = messages.value.slice(0, idx)
@@ -286,7 +291,7 @@ export function useChatSession(apiBase: string) {
       role: 'assistant',
       content: '',
       streaming: true,
-      toolEvents: [],
+      toolEvents: []
     })
     busy.value = true
 
@@ -299,7 +304,8 @@ export function useChatSession(apiBase: string) {
         signal: currentAbortController.signal,
         body: JSON.stringify({
           session_id: activeSid,
-        }),
+          model: activeModelName.value || undefined
+        })
       })
 
       if (!response.ok || !response.body) throw new Error(`Regenerate request failed: ${response.status}`)
@@ -317,9 +323,9 @@ export function useChatSession(apiBase: string) {
 
         for (const item of parsed.events) {
           if (item.event === 'delta') {
-            const current = messages.value.find((msg) => msg.id === assistantId)
+            const current = messages.value.find(msg => msg.id === assistantId)
             updateAssistant(assistantId, {
-              content: `${current?.content || ''}${item.data.content || ''}`,
+              content: `${current?.content || ''}${item.data.content || ''}`
             })
           } else if (item.event === 'replace_last') {
             updateAssistant(assistantId, { content: item.data.content || '' })
@@ -328,7 +334,7 @@ export function useChatSession(apiBase: string) {
               id: crypto.randomUUID(),
               name: item.data.name,
               input: item.data.input,
-              status: 'running',
+              status: 'running'
             })
           } else if (item.event === 'tool_result') {
             finishToolEvent(assistantId, item.data.name, item.data.output || '', item.data.ok !== false)
@@ -341,8 +347,8 @@ export function useChatSession(apiBase: string) {
               metadata: {
                 input_tokens: item.data.input_tokens,
                 output_tokens: item.data.output_tokens,
-                response_time_ms: item.data.response_time_ms,
-              },
+                response_time_ms: item.data.response_time_ms
+              }
             })
             busy.value = false
           }
@@ -388,6 +394,6 @@ export function useChatSession(apiBase: string) {
     stopGeneration,
     regenerateResponse,
     loadSessionHistory,
-    reset,
+    reset
   }
 }
