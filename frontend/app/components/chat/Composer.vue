@@ -68,15 +68,15 @@ const tokenEstimate = computed(() => {
       @change="handleFileChange"
     />
 
-    <div class="relative w-full bg-white dark:bg-stone-900 rounded-2xl shadow-sm border border-stone-200/80 dark:border-stone-800/80 overflow-hidden flex flex-col transition-shadow duration-300 focus-within:ring-4 focus-within:ring-blue-500/10 focus-within:border-blue-500 dark:focus-within:border-blue-500">
+    <div class="relative w-full bg-white dark:bg-stone-900 rounded-2xl shadow-sm border border-stone-200/80 dark:border-stone-800/80 flex flex-col transition-shadow duration-300 focus-within:ring-4 focus-within:ring-blue-500/10 focus-within:border-blue-500 dark:focus-within:border-blue-500">
       <textarea
         v-model="text"
-        class="w-full h-20 p-4 resize-none bg-transparent border-0 outline-none text-stone-800 dark:text-stone-200 placeholder-stone-400 text-sm"
+        class="w-full h-20 p-4 resize-none bg-transparent border-0 outline-none text-stone-800 dark:text-stone-200 placeholder-stone-400 text-sm rounded-t-2xl"
         placeholder="Ask a question or enter a command..."
         aria-label="Message input"
         @keydown="handleKeyDown"
       />
-      <div class="flex items-center justify-between px-3 py-2 bg-stone-50/50 dark:bg-stone-900/50 border-t border-stone-100 dark:border-stone-800 text-xs">
+      <div class="flex items-center justify-between px-3 py-2 bg-stone-50/50 dark:bg-stone-900/50 border-t border-stone-100 dark:border-stone-800 text-xs rounded-b-2xl">
         <!-- Live character/token metrics -->
         <span class="text-[10px] text-stone-400 font-mono pl-1">
           {{ text.length }} chars • ~{{ tokenEstimate }} tokens
@@ -94,6 +94,9 @@ const tokenEstimate = computed(() => {
             <Loader2 v-if="uploading" :size="16" class="animate-spin text-blue-500" />
             <Paperclip v-else :size="16" />
           </button>
+
+          <!-- Model/Agent Selection Dropdown -->
+          <WorkspaceDropdown />
 
           <!-- Stop Generation -->
           <button

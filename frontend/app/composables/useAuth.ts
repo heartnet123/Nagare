@@ -11,13 +11,48 @@ type AuthTokenResponse = {
   readonly access_token: string
 }
 
+function getErrorStatus(error: unknown): number | null {
+  if (typeof error !== 'object' || error === null) return null
+
+  const value = error as {
+    status?: unknown
+    statusCode?: unknown
+    response?: { status?: unknown } | null
+  }
+  const status = value.status ?? value.statusCode ?? value.response?.status
+  return typeof status === 'number' ? status : null
+}
+
 function isStatusError(error: unknown, status: number): boolean {
-  if (typeof error !== 'object' || error === null) return false
+  return getErrorStatus(error) === status
+}
 
-  if ('status' in error && error.status === status) return true
-  if (!('response' in error) || typeof error.response !== 'object' || error.response === null) return false
-
-  return 'status' in error.response && error.response.status === status
+export function getAuthErrorMessage(error: unknown, action: 'login' | 'register'): string {
+  switch (getErrorStatus(error)) {
+    case 400:
+      return 'Request is invalid. Check your details and try again.'
+    case 401:
+      return action === 'login'
+        ? 'Invalid username or password.'
+        : 'Authentication failed. Try again.'
+    case 403:
+      return 'Request blocked. Refresh page and try again.'
+    case 404:
+      return 'Authentication service is unavailable. Try again later.'
+    case 409:
+      return action === 'register' ? 'Username already taken.' : 'Account already exists.'
+    case 422:
+      return 'Enter valid username and password.'
+    case 408:
+    case 429:
+      return 'Too many requests. Wait a moment and try again.'
+    default: {
+      const status = getErrorStatus(error)
+      return status !== null && status >= 500
+        ? 'Server error. Try again later.'
+        : 'Unable to reach server. Check your connection and try again.'
+    }
+  }
 }
 
 export function useAuth() {

@@ -1,27 +1,11 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { Menu, Sun, Moon, Monitor } from '@lucide/vue'
+import { Menu } from '@lucide/vue'
 
 const { sidebarOpen, mobileMenuOpen, toggleSidebar, openMobileMenu, closeMobileMenu } = useAppStore()
-
-const colorMode = useColorMode()
-
-const themeIcon = computed(() => ({
-  light: Sun,
-  dark: Moon,
-  system: Monitor
-}[colorMode.preference] ?? Sun))
-
-function cycleTheme() {
-  const order = ['light', 'dark', 'system'] as const
-  const idx = order.indexOf(colorMode.preference as typeof order[number])
-  colorMode.preference = order[(idx + 1) % 3] as string
-}
 </script>
 
 <template>
-  <div class="flex h-screen w-full overflow-hidden bg-[#FAFAFA] dark:bg-stone-950 text-stone-800 dark:text-stone-50 font-sans">
-    
+  <div class="flex h-screen w-full overflow-hidden bg-[var(--ui-bg)] text-[var(--ui-text)] font-sans pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
     <DashboardSidebar
       :open="sidebarOpen"
       :mobile-open="mobileMenuOpen"
@@ -51,8 +35,6 @@ function cycleTheme() {
               :stroke-width="1.5"
             />
           </button>
-
-          <WorkspaceDropdown />
         </div>
 
         <div class="flex items-center gap-4">
@@ -62,17 +44,7 @@ function cycleTheme() {
               All Systems Operational
             </span>
           </div>
-          <button
-            class="p-2 rounded-full bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-50 hover:bg-stone-50 dark:hover:bg-stone-700 shadow-sm transition-colors"
-            :aria-label="`Theme: ${colorMode.preference}`"
-            @click="cycleTheme"
-          >
-            <component
-              :is="themeIcon"
-              :size="18"
-              :stroke-width="1.5"
-            />
-          </button>
+          <UiThemeToggle />
           <UiUserDropdown />
         </div>
       </header>

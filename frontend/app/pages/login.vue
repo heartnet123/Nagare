@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { getAuthErrorMessage } from '~/composables/useAuth'
+
 const { login } = useAuth()
 
 definePageMeta({
@@ -21,11 +23,7 @@ async function onSubmit() {
     await login(form.username, form.password)
     await navigateTo('/')
   } catch (error) {
-    if (error instanceof Error) {
-      errorMessage.value = error.message
-    } else {
-      errorMessage.value = 'Unable to sign in.'
-    }
+    errorMessage.value = getAuthErrorMessage(error, 'login')
   } finally {
     loading.value = false
   }

@@ -6,9 +6,11 @@ const props = withDefaults(
     data: number[]
     color?: string
     height?: number
+    label?: string
+    ariaLabel?: string
   }>(),
   {
-    color: '#3b82f6',
+    color: '#00C16A',
     height: 160
   }
 )
@@ -40,43 +42,71 @@ const chartData = computed(() => {
 </script>
 
 <template>
-  <svg
-    :viewBox="`0 0 ${width} ${height}`"
-    class="w-full"
-    preserveAspectRatio="none"
-    aria-hidden="true"
-  >
-    <defs>
-      <linearGradient
-        :id="chartData.gid"
-        x1="0"
-        y1="0"
-        x2="0"
-        y2="1"
-      >
-        <stop
-          offset="0%"
-          :stop-color="color"
-          stop-opacity="0.18"
-        />
-        <stop
-          offset="100%"
-          :stop-color="color"
-          stop-opacity="0"
-        />
-      </linearGradient>
-    </defs>
-    <polygon
-      :points="chartData.area"
-      :fill="`url(#${chartData.gid})`"
-    />
-    <polyline
-      :points="chartData.line"
-      fill="none"
-      :stroke="color"
-      stroke-width="2"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-    />
-  </svg>
+  <div class="relative w-full">
+    <!-- Accessible Summary Table (screen reader only) -->
+    <div class="sr-only">
+      <table class="w-full text-xs">
+        <caption>{{ label || 'Area Chart' }}</caption>
+        <thead>
+          <tr>
+            <th scope="col">
+              Data Point
+            </th>
+            <th scope="col">
+              Value
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="(v, i) in data"
+            :key="i"
+          >
+            <td>Point {{ i + 1 }}</td>
+            <td>{{ v }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <svg
+      :viewBox="`0 0 ${width} ${height}`"
+      class="w-full"
+      preserveAspectRatio="none"
+      role="img"
+      :aria-label="ariaLabel || label || 'Area Chart showing data trend'"
+    >
+      <defs>
+        <linearGradient
+          :id="chartData.gid"
+          x1="0"
+          y1="0"
+          x2="0"
+          y2="1"
+        >
+          <stop
+            offset="0%"
+            :stop-color="color"
+            stop-opacity="0.18"
+          />
+          <stop
+            offset="100%"
+            :stop-color="color"
+            stop-opacity="0"
+          />
+        </linearGradient>
+      </defs>
+      <polygon
+        :points="chartData.area"
+        :fill="`url(#${chartData.gid})`"
+      />
+      <polyline
+        :points="chartData.line"
+        fill="none"
+        :stroke="color"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </svg>
+  </div>
 </template>

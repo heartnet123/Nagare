@@ -66,7 +66,7 @@ marked.use({
 
 const parsedSources = computed(() => {
   const regex = /\[Source:\s*([^,\]]+)(?:,\s*page\s*(\d+))?\]/gi
-  const list: Array<{ file: string; page: number | null }> = []
+  const list: Array<{ file: string, page: number | null }> = []
   let match
   // Extract sources
   while ((match = regex.exec(props.message.content)) !== null) {
@@ -145,8 +145,15 @@ const copyText = async () => {
             title="Copy message"
             @click="copyText"
           >
-            <Check v-if="copied" :size="14" class="text-emerald-500" />
-            <Copy v-else :size="14" />
+            <Check
+              v-if="copied"
+              :size="14"
+              class="text-emerald-500"
+            />
+            <Copy
+              v-else
+              :size="14"
+            />
           </button>
           <button
             v-if="props.message.role === 'assistant' && !props.busy && props.isLast"
@@ -169,7 +176,10 @@ const copyText = async () => {
       </div>
 
       <!-- Source Citations List -->
-      <div v-if="parsedSources.length > 0" class="mt-4 flex flex-wrap gap-2 pt-2 border-t border-stone-100 dark:border-stone-800">
+      <div
+        v-if="parsedSources.length > 0"
+        class="mt-4 flex flex-wrap gap-2 pt-2 border-t border-stone-100 dark:border-stone-800"
+      >
         <div class="text-[10px] uppercase font-bold tracking-wider text-stone-400 mr-2 flex items-center h-6">
           Sources:
         </div>
@@ -178,9 +188,15 @@ const copyText = async () => {
           :key="idx"
           class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-stone-50 dark:bg-stone-900 border border-stone-200/60 dark:border-stone-850 text-xs text-stone-600 dark:text-stone-300"
         >
-          <FileText :size="12" class="text-stone-400" />
+          <FileText
+            :size="12"
+            class="text-stone-400"
+          />
           <span class="font-medium truncate max-w-[150px]">{{ source.file }}</span>
-          <span v-if="source.page" class="text-[10px] text-stone-400 font-semibold px-1 rounded bg-stone-200/50 dark:bg-stone-800">p. {{ source.page }}</span>
+          <span
+            v-if="source.page"
+            class="text-[10px] text-stone-400 font-semibold px-1 rounded bg-stone-200/50 dark:bg-stone-800"
+          >p. {{ source.page }}</span>
           <span class="text-[10px] font-bold text-blue-600 dark:text-blue-400">[{{ idx + 1 }}]</span>
         </div>
       </div>
@@ -190,15 +206,24 @@ const copyText = async () => {
         v-if="props.message.role === 'assistant' && props.message.metadata"
         class="mt-3 flex items-center gap-4 text-[10px] text-stone-400 font-mono tracking-wide"
       >
-        <span v-if="props.message.metadata.response_time_ms !== undefined" class="flex items-center gap-1">
+        <span
+          v-if="props.message.metadata.response_time_ms !== undefined"
+          class="flex items-center gap-1"
+        >
           <Clock :size="11" />
           {{ (props.message.metadata.response_time_ms / 1000).toFixed(2) }}s
         </span>
-        <span v-if="props.message.metadata.input_tokens !== undefined" class="flex items-center gap-1">
+        <span
+          v-if="props.message.metadata.input_tokens !== undefined"
+          class="flex items-center gap-1"
+        >
           <Coins :size="11" />
           In: {{ props.message.metadata.input_tokens }}
         </span>
-        <span v-if="props.message.metadata.output_tokens !== undefined" class="flex items-center gap-1">
+        <span
+          v-if="props.message.metadata.output_tokens !== undefined"
+          class="flex items-center gap-1"
+        >
           Out: {{ props.message.metadata.output_tokens }}
         </span>
       </div>

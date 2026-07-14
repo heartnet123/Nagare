@@ -172,6 +172,7 @@ function formatDate(value: string): string {
                   <UButton
                     color="neutral"
                     variant="ghost"
+                    class="min-h-[44px] min-w-[44px] flex items-center justify-center"
                     :aria-label="`Preview chunks for ${document.title}`"
                     @click="emit('preview', document)"
                   >
@@ -185,6 +186,7 @@ function formatDate(value: string): string {
                   <UButton
                     color="error"
                     variant="ghost"
+                    class="min-h-[44px] min-w-[44px] flex items-center justify-center"
                     :loading="deletingId === document.id"
                     :aria-label="`Delete ${document.title}`"
                     @click="emit('delete', document)"

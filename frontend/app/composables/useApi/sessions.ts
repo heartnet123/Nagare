@@ -9,10 +9,10 @@ export const useApiSessions = () => {
       $fetch<ApiListResponse<Session>>('/api/sessions', { baseURL, query: { search } }),
     listArchived: (search?: string) =>
       $fetch<ApiListResponse<Session>>('/api/sessions/archived', { baseURL, query: { search } }),
-    create: (data: { name?: string; model?: string; endpoint_url?: string }) =>
+    create: (data: { name?: string, model?: string, endpoint_url?: string }) =>
       $fetch<Session>('/api/session', { method: 'POST', body: data, baseURL }),
     get: (sid: string) => $fetch<Session>(`/api/session/${sid}`, { baseURL }),
-    update: (sid: string, data: { name?: string; folder?: string; model?: string }) =>
+    update: (sid: string, data: { name?: string, folder?: string, model?: string }) =>
       $fetch<any>(`/api/session/${sid}`, { method: 'PATCH', body: data, baseURL }),
     delete: (sid: string) =>
       $fetch<any>(`/api/session/${sid}`, { method: 'DELETE', baseURL }),

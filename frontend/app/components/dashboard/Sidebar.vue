@@ -9,8 +9,7 @@ import {
   Command,
   MessageSquare,
   MoreVertical,
-  Pencil,
-  Trash2
+  Activity
 } from '@lucide/vue'
 import type { DropdownMenuItem } from '@nuxt/ui'
 import { navGroups } from '~/utils/nav'
@@ -27,7 +26,8 @@ const emit = defineEmits<{
 const route = useRoute()
 const showAllSessions = ref(false)
 const { sessions, recentSessions, loadSessions } = useSessionStore()
-const sidebarSessions = computed(() => showAllSessions.value ? sessions.value : recentSessions.value)
+const visibleLimit = ref(20)
+const sidebarSessions = computed(() => showAllSessions.value ? sessions.value.slice(0, visibleLimit.value) : recentSessions.value)
 
 // Auto-load sessions once
 if (import.meta.client && recentSessions.value.length === 0) {
@@ -56,13 +56,12 @@ const isRecentChatActive = (sessionId: string) => {
   return false
 }
 
-const handleNewChatClick = (e: MouseEvent) => {
+const handleNewChatClick = () => {
   emit('closeMobile')
 }
 
-const handleRecentChatClick = (e: MouseEvent, sessionId: string) => {
+const handleRecentChatClick = () => {
   emit('closeMobile')
-  // Simply navigate to the session page - no drawer needed
 }
 
 // Session manipulation functions
@@ -106,7 +105,7 @@ const deleteSession = async (sid: string) => {
   }
 }
 
-const getSessionMenuItems = (session: { id: string; name: string }): DropdownMenuItem[][] => {
+const getSessionMenuItems = (session: { id: string, name: string }): DropdownMenuItem[][] => {
   return [
     [
       {
@@ -137,18 +136,23 @@ const getSessionMenuItems = (session: { id: string; name: string }): DropdownMen
     </Transition>
 
     <aside
-      class="fixed md:static inset-y-0 left-0 z-50 flex flex-col bg-[#F5F5F4] border-r border-stone-200 transition-all duration-300 ease-in-out"
+      class="fixed md:static inset-y-0 left-0 z-50 flex flex-col bg-[#F5F5F4] dark:bg-stone-900 border-r border-stone-200 dark:border-stone-800 transition-all duration-300 ease-in-out"
       :class="[
         open ? 'w-[260px]' : 'w-[80px]',
         mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
       ]"
     >
-      <div class="flex items-center justify-between p-6">
+      <div
+        class="flex items-center transition-all duration-300"
+        :class="[
+          open ? 'justify-between p-6 w-full' : 'justify-center py-6 px-4 w-full'
+        ]"
+      >
         <NuxtLink
           to="/"
           class="flex items-center gap-3 overflow-hidden"
         >
-          <div class="flex items-center justify-center w-8 h-8 text-blue-600 shrink-0">
+          <div class="flex items-center justify-center w-8 h-8 text-emerald-600 dark:text-emerald-500 shrink-0">
             <Waves
               :size="28"
               :stroke-width="2"
@@ -158,16 +162,17 @@ const getSessionMenuItems = (session: { id: string; name: string }): DropdownMen
             v-if="open"
             class="flex flex-col"
           >
-            <span class="font-sans font-bold tracking-tight text-stone-900 leading-tight">
+            <span class="font-sans font-bold tracking-tight text-stone-900 dark:text-stone-100 leading-tight">
               NAGARE OS
             </span>
-            <span class="text-[10px] font-medium text-stone-500 uppercase tracking-widest leading-tight">
+            <span class="text-[10px] font-medium text-stone-500 dark:text-stone-400 uppercase tracking-widest leading-tight">
               AI Operating System
             </span>
           </div>
         </NuxtLink>
         <button
-          class="md:hidden p-1 text-stone-400 hover:text-stone-800"
+          v-if="open"
+          class="md:hidden p-1 text-stone-400 dark:text-stone-500 hover:text-stone-800 dark:hover:text-stone-200"
           aria-label="Close menu"
           @click="emit('closeMobile')"
         >
@@ -185,7 +190,7 @@ const getSessionMenuItems = (session: { id: string; name: string }): DropdownMen
             to="/"
             class="flex items-center justify-between w-full px-3 py-2.5 rounded-xl transition-all duration-200"
             :class="[
-              isNewChatLinkActive ? 'bg-white shadow-sm border border-stone-200 text-stone-900' : 'text-stone-600 hover:bg-stone-200/50',
+              isNewChatLinkActive ? 'bg-white dark:bg-stone-800 shadow-sm border border-stone-200 dark:border-stone-700 text-stone-900 dark:text-stone-100' : 'text-stone-600 dark:text-stone-400 hover:bg-stone-200/50 dark:hover:bg-stone-800/30 hover:text-stone-800 dark:hover:text-stone-200',
               !open && 'justify-center'
             ]"
             @click="handleNewChatClick"
@@ -203,7 +208,7 @@ const getSessionMenuItems = (session: { id: string; name: string }): DropdownMen
             </div>
             <div
               v-if="open"
-              class="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-stone-200 text-[10px] text-stone-500 font-medium"
+              class="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-stone-200 dark:bg-stone-800 text-[10px] text-stone-500 dark:text-stone-400 font-medium"
             >
               <Command :size="10" /> K
             </div>
@@ -211,12 +216,15 @@ const getSessionMenuItems = (session: { id: string; name: string }): DropdownMen
         </div>
 
         <!-- Recent Chats (visible when sidebar is open and active chats exist) -->
-        <div v-if="open && recentSessions.length > 0" class="space-y-1">
+        <div
+          v-if="open && recentSessions.length > 0"
+          class="space-y-1"
+        >
           <div class="px-3 mb-2 flex items-center justify-between gap-2 text-[11px] font-semibold tracking-wider text-stone-400 dark:text-stone-500 uppercase">
             <span>Conversations</span>
             <button
               v-if="sessions.length > recentSessions.length"
-              class="normal-case tracking-normal text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+              class="normal-case tracking-normal text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 font-semibold"
               @click="showAllSessions = !showAllSessions"
             >
               {{ showAllSessions ? 'Show 5' : 'See all' }}
@@ -241,7 +249,7 @@ const getSessionMenuItems = (session: { id: string; name: string }): DropdownMen
                 <NuxtLink
                   :to="`/session/${s.id}`"
                   class="flex items-center flex-1 min-w-0"
-                  @click="(e) => handleRecentChatClick(e, s.id)"
+                  @click="handleRecentChatClick"
                 >
                   <MessageSquare
                     :size="15"
@@ -258,12 +266,15 @@ const getSessionMenuItems = (session: { id: string; name: string }): DropdownMen
                   <UButton
                     color="neutral"
                     variant="ghost"
-                    size="xs"
-                    class="p-1"
+                    class="p-2.5 -m-1.5 min-h-[44px] min-w-[44px] flex items-center justify-center"
                     aria-label="Session actions"
                     @click.stop
                   >
-                    <MoreVertical :size="14" :stroke-width="1.5" class="text-stone-400" />
+                    <MoreVertical
+                      :size="14"
+                      :stroke-width="1.5"
+                      class="text-stone-400"
+                    />
                   </UButton>
                 </UDropdownMenu>
               </div>
@@ -286,9 +297,17 @@ const getSessionMenuItems = (session: { id: string; name: string }): DropdownMen
                   @keydown.enter="saveRename(s.id)"
                   @keydown.escape="cancelRename"
                   @blur="saveRename(s.id)"
-                />
+                >
               </div>
             </div>
+            <!-- Load more button if there are more sessions remaining -->
+            <button
+              v-if="showAllSessions && sessions.length > visibleLimit"
+              class="w-full mt-2 py-1.5 text-xs text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 hover:bg-stone-200/30 dark:hover:bg-stone-800/20 rounded-xl transition-colors font-semibold text-center"
+              @click="visibleLimit += 20"
+            >
+              Load more ({{ sessions.length - visibleLimit }} remaining)
+            </button>
           </div>
         </div>
 
@@ -298,7 +317,7 @@ const getSessionMenuItems = (session: { id: string; name: string }): DropdownMen
         >
           <div
             v-if="open"
-            class="px-3 mb-2 text-[11px] font-semibold tracking-wider text-stone-400 uppercase"
+            class="px-3 mb-2 text-[11px] font-semibold tracking-wider text-stone-400 dark:text-stone-500 uppercase"
           >
             {{ group.title }}
           </div>
@@ -309,7 +328,7 @@ const getSessionMenuItems = (session: { id: string; name: string }): DropdownMen
               :to="item.href"
               class="flex items-center w-full px-3 py-2.5 rounded-xl transition-all duration-200"
               :class="[
-                isActive(item.href) ? 'bg-white shadow-sm border border-stone-200 text-stone-900' : 'text-stone-500 hover:bg-stone-200/50 hover:text-stone-800',
+                isActive(item.href) ? 'bg-white dark:bg-stone-800 shadow-sm border border-stone-200 dark:border-stone-700 text-stone-900 dark:text-stone-100' : 'text-stone-500 dark:text-stone-400 hover:bg-stone-200/50 dark:hover:bg-stone-800/30 hover:text-stone-800 dark:hover:text-stone-200',
                 !open && 'justify-center'
               ]"
               @click="emit('closeMobile')"
@@ -329,48 +348,57 @@ const getSessionMenuItems = (session: { id: string; name: string }): DropdownMen
         </div>
       </div>
 
-      <div class="p-4">
-        <div
-          class="p-4 rounded-2xl bg-white border border-stone-200 shadow-sm"
-          :class="[!open && 'flex justify-center items-center py-4 px-2']"
-        >
-          <template v-if="open">
+      <div class="p-4 flex justify-center">
+        <template v-if="open">
+          <div class="w-full p-4 rounded-2xl bg-white dark:bg-stone-850 border border-stone-200 dark:border-stone-800 shadow-sm transition-all duration-300">
             <div class="flex items-center justify-between mb-4">
-              <span class="text-xs font-semibold text-stone-900">System Status</span>
-              <div class="flex items-center gap-1.5 text-[10px] font-medium text-emerald-600">
-                <div class="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              <span class="text-xs font-semibold text-stone-900 dark:text-stone-100">System Status</span>
+              <div class="flex items-center gap-1.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+                <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 Healthy
               </div>
             </div>
             <div class="space-y-3 mb-4">
               <div class="flex items-center justify-between">
                 <div class="flex flex-col">
-                  <span class="text-[10px] text-stone-500">Total Queries</span>
-                  <span class="text-sm font-semibold text-stone-900">24.8K</span>
+                  <span class="text-[10px] text-stone-500 dark:text-stone-400">Total Queries</span>
+                  <span class="text-sm font-semibold text-stone-900 dark:text-stone-100">24.8K</span>
                 </div>
-                <span class="text-[10px] font-medium text-emerald-600">+12.5%</span>
+                <span class="text-[10px] font-medium text-emerald-600 dark:text-emerald-400">+12.5%</span>
               </div>
               <div class="flex items-center justify-between">
                 <div class="flex flex-col">
-                  <span class="text-[10px] text-stone-500">Avg. Latency</span>
-                  <span class="text-sm font-semibold text-stone-900">320ms</span>
+                  <span class="text-[10px] text-stone-500 dark:text-stone-400">Avg. Latency</span>
+                  <span class="text-sm font-semibold text-stone-900 dark:text-stone-100">320ms</span>
                 </div>
-                <span class="text-[10px] font-medium text-emerald-600">-8.4%</span>
+                <span class="text-[10px] font-medium text-emerald-600 dark:text-emerald-400">-8.4%</span>
               </div>
             </div>
             <NuxtLink
               to="/monitoring"
-              class="w-full py-2 flex items-center justify-between text-xs font-medium text-stone-600 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-lg px-3 transition-colors"
+              class="w-full py-2 flex items-center justify-between text-xs font-medium text-stone-600 dark:text-stone-300 bg-stone-50 dark:bg-stone-900 hover:bg-stone-100 dark:hover:bg-stone-800 border border-stone-200 dark:border-stone-750 rounded-lg px-3 transition-colors"
               @click="emit('closeMobile')"
             >
               View System Health
               <ArrowRight :size="14" />
             </NuxtLink>
-          </template>
-          <template v-else>
-            <div class="w-2 h-2 rounded-full bg-emerald-500" />
-          </template>
-        </div>
+          </div>
+        </template>
+        <template v-else>
+          <NuxtLink
+            to="/monitoring"
+            class="flex items-center justify-center w-10 h-10 rounded-xl bg-white dark:bg-stone-850 border border-stone-200 dark:border-stone-800 text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-emerald-600 dark:hover:text-emerald-400 shadow-sm relative transition-all duration-300 group"
+            title="System Status: Healthy (Click to view health)"
+            @click="emit('closeMobile')"
+          >
+            <Activity
+              :size="18"
+              :stroke-width="1.5"
+            />
+            <span class="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+            <span class="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-500" />
+          </NuxtLink>
+        </template>
       </div>
     </aside>
   </div>

@@ -55,6 +55,7 @@ const router = useRouter()
 const config = useRuntimeConfig()
 const api = useApi()
 const sessionStore = useSessionStore()
+const { activeModelName, syncSelectionToModel } = useActiveSelection()
 
 // Shared Drawer states
 const isChatDrawerOpen = sessionStore.chatDrawerOpen
@@ -265,6 +266,12 @@ const currentSessionModel = computed(() => {
   return current ? current.model : null
 })
 
+watch(currentSessionModel, (newModel) => {
+  if (newModel) {
+    syncSelectionToModel(newModel)
+  }
+})
+
 // Route navigation actions / Drawer actions
 const selectSession = (sid: string) => {
   if (props.isInDrawer) {
@@ -284,7 +291,10 @@ const startNewChat = () => {
 
 const createSessionForMessage = async (text: string) => {
   const name = text.length > 48 ? `${text.slice(0, 45)}...` : text
-  const session = await api.sessions.create({ name })
+  const session = await api.sessions.create({
+    name,
+    model: activeModelName.value || undefined
+  })
   currentSessionId.value = session.id
   sessionsList.value = [session, ...sessionsList.value.filter((item) => item.id !== session.id)]
   sessionStore.sessions.value = sessionsList.value
@@ -447,7 +457,8 @@ const send = async (text: string) => {
           .filter((message) => message.role === 'user' || (message.role === 'assistant' && message.content.trim()))
           .map((message) => ({ role: message.role, content: message.content })),
         max_rounds: 8,
-        session_id: activeSid
+        session_id: activeSid,
+        model: activeModelName.value || undefined
       })
     })
 
@@ -543,7 +554,7 @@ const regenerateResponse = async (assistantMsgId: string) => {
       signal: currentAbortController.signal,
       body: JSON.stringify({
         session_id: activeSid,
-        model: currentSessionModel.value || undefined
+        model: activeModelName.value || currentSessionModel.value || undefined
       })
     })
 

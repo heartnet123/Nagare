@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { getAuthErrorMessage } from '~/composables/useAuth'
+
 const { register } = useAuth()
 
 definePageMeta({
@@ -21,11 +23,7 @@ async function onSubmit() {
     await register(form.username, form.password)
     await navigateTo('/')
   } catch (error) {
-    if (error instanceof Error) {
-      errorMessage.value = error.message
-    } else {
-      errorMessage.value = 'Unable to create account.'
-    }
+    errorMessage.value = getAuthErrorMessage(error, 'register')
   } finally {
     loading.value = false
   }

@@ -69,47 +69,47 @@ function dotColor(tone: 'amber' | 'blue' | 'emerald') {
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
       <!-- Throughput -->
-      <div class="p-5 rounded-2xl bg-white border border-stone-200 shadow-sm">
+      <div class="p-5 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-sm">
         <div class="mb-4">
-          <h3 class="text-sm font-semibold text-stone-900">
+          <h3 class="text-sm font-semibold text-stone-900 dark:text-stone-100">
             Request Throughput
           </h3>
-          <p class="text-xs text-stone-400">
+          <p class="text-xs text-stone-400 dark:text-stone-500">
             requests / min · last 24h
           </p>
         </div>
         <DashboardAreaChart
           :data="[900, 1100, 1000, 1350, 1600, 1400, 1700, 1500, 1850, 1900, 1750, 1900]"
-          color="#3b82f6"
+          color="#00C16A"
         />
       </div>
 
       <!-- Latency -->
-      <div class="p-5 rounded-2xl bg-white border border-stone-200 shadow-sm">
+      <div class="p-5 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-sm">
         <div class="mb-4">
-          <h3 class="text-sm font-semibold text-stone-900">
+          <h3 class="text-sm font-semibold text-stone-900 dark:text-stone-100">
             Latency (p95)
           </h3>
-          <p class="text-xs text-stone-400">
+          <p class="text-xs text-stone-400 dark:text-stone-500">
             milliseconds · last 24h
           </p>
         </div>
         <DashboardAreaChart
           :data="[420, 400, 410, 360, 380, 350, 340, 355, 330, 340, 320, 340]"
-          color="#10b981"
+          color="#00A155"
         />
       </div>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
       <div class="lg:col-span-7">
-        <div class="bg-white border border-stone-200 rounded-2xl shadow-sm overflow-hidden">
-          <div class="px-5 py-4 border-b border-stone-100">
-            <h3 class="text-sm font-semibold text-stone-900">
+        <div class="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl shadow-sm overflow-hidden">
+          <div class="px-5 py-4 border-b border-stone-100 dark:border-stone-800">
+            <h3 class="text-sm font-semibold text-stone-900 dark:text-stone-100">
               Service Health
             </h3>
           </div>
-          <div class="divide-y divide-stone-100">
+          <div class="divide-y divide-stone-100 dark:divide-stone-800">
             <div
               v-for="s in services"
               :key="s.name"
@@ -120,15 +120,15 @@ function dotColor(tone: 'amber' | 'blue' | 'emerald') {
                   class="w-2 h-2 rounded-full"
                   :class="s.status === 'healthy' ? 'bg-emerald-500' : 'bg-amber-500'"
                 />
-                <span class="text-sm font-medium text-stone-800">{{ s.name }}</span>
+                <span class="text-sm font-medium text-stone-800 dark:text-stone-200">{{ s.name }}</span>
               </div>
               <div class="flex items-center gap-6 text-xs">
-                <span class="text-stone-500">
-                  <span class="text-stone-400">uptime </span>
+                <span class="text-stone-500 dark:text-stone-400">
+                  <span class="text-stone-400 dark:text-stone-500">uptime </span>
                   {{ s.uptime }}
                 </span>
-                <span class="text-stone-500 w-16 text-right">
-                  <span class="text-stone-400">p95 </span>
+                <span class="text-stone-500 dark:text-stone-400 w-16 text-right">
+                  <span class="text-stone-400 dark:text-stone-500">p95 </span>
                   {{ s.latency }}
                 </span>
                 <DashboardBadge
@@ -150,24 +150,24 @@ function dotColor(tone: 'amber' | 'blue' | 'emerald') {
       </div>
 
       <div class="lg:col-span-5">
-        <div class="bg-white border border-stone-200 rounded-2xl shadow-sm overflow-hidden">
-          <div class="px-5 py-4 border-b border-stone-100">
-            <h3 class="text-sm font-semibold text-stone-900">
+        <div class="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl shadow-sm overflow-hidden">
+          <div class="px-5 py-4 border-b border-stone-100 dark:border-stone-800">
+            <h3 class="text-sm font-semibold text-stone-900 dark:text-stone-100">
               Recent Events
             </h3>
           </div>
-          <div class="divide-y divide-stone-100">
+          <div class="divide-y divide-stone-100 dark:divide-stone-800">
             <div
               v-for="(e, i) in events"
               :key="i"
               class="flex items-start gap-3 px-5 py-3.5"
             >
-              <span class="text-[11px] font-mono text-stone-400 pt-0.5 shrink-0">{{ e.time }}</span>
+              <span class="text-[11px] font-mono text-stone-400 dark:text-stone-500 pt-0.5 shrink-0">{{ e.time }}</span>
               <span
                 class="mt-1.5 w-1.5 h-1.5 rounded-full shrink-0"
                 :class="dotColor(e.tone)"
               />
-              <span class="text-xs text-stone-600 leading-relaxed">{{ e.text }}</span>
+              <span class="text-xs text-stone-600 dark:text-stone-400 leading-relaxed">{{ e.text }}</span>
             </div>
           </div>
         </div>

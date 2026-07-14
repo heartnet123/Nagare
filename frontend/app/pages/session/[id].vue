@@ -73,6 +73,14 @@ const initialLoading = ref(true)
 const sessionName = ref('Chat')
 const sessionModel = ref('')
 
+const { syncSelectionToModel } = useActiveSelection()
+
+watch(sessionModel, (newModel) => {
+  if (newModel) {
+    syncSelectionToModel(newModel)
+  }
+}, { immediate: true })
+
 // ── Computed ─────────────────────────────────────────────────────────────────
 const hasMessages = computed(() => messages.value.length > 0)
 

@@ -2,9 +2,10 @@
 import { Save, Loader2 } from '@lucide/vue'
 
 const api = useApi()
+const colorMode = useColorMode()
 const loading = ref(true)
 const saving = ref(false)
-const toast = ref<{ type: 'success' | 'error', message: string } | null>(null)
+const toast = useToast()
 
 const theme = reactive({
   theme: 'system' as 'light' | 'dark' | 'system',
@@ -39,8 +40,9 @@ async function loadTheme() {
   try {
     const data = await api.settings.getTheme()
     Object.assign(theme, data)
+    colorMode.preference = theme.theme
   } catch {
-    toast.value = { type: 'error', message: 'Failed to load theme settings' }
+    toast.add({ title: 'Failed to load theme settings', color: 'error' })
   } finally {
     loading.value = false
   }
@@ -50,9 +52,10 @@ async function saveTheme() {
   saving.value = true
   try {
     await api.settings.updateTheme({ ...theme })
-    toast.value = { type: 'success', message: 'Theme settings saved' }
+    colorMode.preference = theme.theme
+    toast.add({ title: 'Theme settings saved', color: 'success' })
   } catch {
-    toast.value = { type: 'error', message: 'Failed to save theme settings' }
+    toast.add({ title: 'Failed to save theme settings', color: 'error' })
   } finally {
     saving.value = false
   }
@@ -118,12 +121,6 @@ onMounted(loadTheme)
           Save Theme
         </UButton>
       </div>
-    </div>
-    <div
-      v-if="toast"
-      :class="['fixed bottom-4 right-4 p-4 rounded-lg shadow-lg z-50', toast.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white']"
-    >
-      {{ toast.message }}
     </div>
   </UCard>
 </template>

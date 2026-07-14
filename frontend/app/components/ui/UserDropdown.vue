@@ -62,7 +62,10 @@ const userInitial = computed(() => {
 </script>
 
 <template>
-  <UDropdownMenu :items="items" :ui="{ content: 'w-48' }">
+  <UDropdownMenu
+    :items="items"
+    :ui="{ content: 'w-48' }"
+  >
     <UButton
       color="neutral"
       variant="ghost"
@@ -79,7 +82,10 @@ const userInitial = computed(() => {
         v-else
         class="flex items-center justify-center w-8 h-8 rounded-full bg-stone-200 dark:bg-stone-700 text-stone-600 dark:text-stone-300 font-medium text-sm shadow-sm"
       >
-        <UIcon name="i-lucide-user" :size="16" />
+        <UIcon
+          name="i-lucide-user"
+          :size="16"
+        />
       </div>
     </UButton>
   </UDropdownMenu>

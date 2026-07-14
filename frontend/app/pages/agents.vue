@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
-import type { Agent, Skill } from '~/types'
-import { Bot, Activity, Plus, X, Save, Trash2, Edit3, AlertCircle, CheckCircle, Cpu, Hammer } from '@lucide/vue'
+import { Bot, Activity, Plus, X, Save, Trash2, Edit3, AlertCircle, CheckCircle, Hammer } from '@lucide/vue'
 
 definePageMeta({
   layout: 'default'
@@ -186,7 +185,7 @@ onMounted(() => {
     >
       <template #action>
         <button
-          class="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98]"
+          class="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98]"
           @click="openAddForm"
         >
           <Plus :size="16" />
@@ -196,12 +195,18 @@ onMounted(() => {
     </DashboardPageHeader>
 
     <!-- Error/Success Banners -->
-    <div v-if="error" class="mb-6 flex items-center gap-3 p-4 rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-400 text-sm">
+    <div
+      v-if="error"
+      class="mb-6 flex items-center gap-3 p-4 rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-400 text-sm"
+    >
       <AlertCircle :size="18" />
       <span>{{ error }}</span>
     </div>
 
-    <div v-if="successMsg" class="mb-6 flex items-center gap-3 p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/50 text-emerald-700 dark:text-emerald-400 text-sm">
+    <div
+      v-if="successMsg"
+      class="mb-6 flex items-center gap-3 p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/50 text-emerald-700 dark:text-emerald-400 text-sm"
+    >
       <CheckCircle :size="18" />
       <span>{{ successMsg }}</span>
     </div>
@@ -232,15 +237,26 @@ onMounted(() => {
     </div>
 
     <!-- Loading State -->
-    <div v-if="loading && agents.length === 0" class="flex flex-col items-center justify-center py-20 text-stone-400">
-      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-3" />
+    <div
+      v-if="loading && agents.length === 0"
+      class="flex flex-col items-center justify-center py-20 text-stone-400"
+    >
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mb-3" />
       <span class="text-sm">Loading agents...</span>
     </div>
 
     <!-- Empty State -->
-    <div v-else-if="agents.length === 0" class="flex flex-col items-center justify-center p-12 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 text-center mb-8">
-      <Bot :size="48" class="text-stone-300 dark:text-stone-700 mb-3" />
-      <h4 class="text-sm font-semibold text-stone-900 dark:text-stone-100">No Agents Configured</h4>
+    <div
+      v-else-if="agents.length === 0"
+      class="flex flex-col items-center justify-center p-12 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 text-center mb-8"
+    >
+      <Bot
+        :size="48"
+        class="text-stone-300 dark:text-stone-700 mb-3"
+      />
+      <h4 class="text-sm font-semibold text-stone-900 dark:text-stone-100">
+        No Agents Configured
+      </h4>
       <p class="text-xs text-stone-500 dark:text-stone-400 mt-1 max-w-[280px]">
         Create agents to customize models, rules, prompts, and tool access for specific tasks.
       </p>
@@ -253,7 +269,10 @@ onMounted(() => {
     </div>
 
     <!-- Agents Grid -->
-    <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+    <div
+      v-else
+      class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8"
+    >
       <div
         v-for="a in agents"
         :key="a.id"
@@ -263,7 +282,7 @@ onMounted(() => {
           <!-- Title & Badges -->
           <div class="flex items-start justify-between mb-3">
             <div class="flex items-center gap-3">
-              <div class="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400">
+              <div class="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400">
                 <Bot :size="20" />
               </div>
               <div>
@@ -288,19 +307,28 @@ onMounted(() => {
 
           <!-- Prompt & Skills -->
           <div class="mt-4 pt-3 border-t border-stone-100 dark:border-stone-800/80 space-y-2">
-            <p v-if="a.system_prompt" class="text-xs text-stone-500 dark:text-stone-400 leading-relaxed italic line-clamp-2">
+            <p
+              v-if="a.system_prompt"
+              class="text-xs text-stone-500 dark:text-stone-400 leading-relaxed italic line-clamp-2"
+            >
               "{{ a.system_prompt }}"
             </p>
-            <p v-else class="text-xs text-stone-400 dark:text-stone-600 italic">
+            <p
+              v-else
+              class="text-xs text-stone-400 dark:text-stone-600 italic"
+            >
               No custom system prompt configured.
             </p>
 
             <!-- Skills List -->
-            <div v-if="a.skills && a.skills.length" class="flex flex-wrap gap-1.5 pt-1">
+            <div
+              v-if="a.skills && a.skills.length"
+              class="flex flex-wrap gap-1.5 pt-1"
+            >
               <span
                 v-for="skill in a.skills"
                 :key="skill"
-                class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-950/30 border border-blue-100/50 dark:border-blue-900/30 text-[10px] font-semibold text-blue-700 dark:text-blue-400"
+                class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-100/50 dark:border-emerald-900/30 text-[10px] font-semibold text-emerald-700 dark:text-emerald-400"
               >
                 <Hammer :size="10" />
                 {{ skill }}
@@ -333,7 +361,7 @@ onMounted(() => {
           <div class="w-24 h-8 opacity-60">
             <DashboardSparkline
               :data="[15, 20, 18, 30, a.status === 'active' ? 45 : 0, a.status === 'active' ? 32 : 0, a.status === 'active' ? 40 : 0]"
-              :color="a.status === 'active' ? '#3b82f6' : '#a8a29e'"
+              :color="a.status === 'active' ? '#00C16A' : '#a8a29e'"
             />
           </div>
         </div>
@@ -357,7 +385,10 @@ onMounted(() => {
         >
           <div class="flex items-center justify-between pb-3 border-b border-stone-100 dark:border-stone-800">
             <h3 class="text-base font-semibold text-stone-900 dark:text-stone-100 flex items-center gap-2">
-              <Bot :size="18" class="text-blue-500" />
+              <Bot
+                :size="18"
+                class="text-emerald-500"
+              />
               {{ editingAgent ? 'Edit Agent' : 'Create Custom Agent' }}
             </h3>
             <button
@@ -382,7 +413,7 @@ onMounted(() => {
                 type="text"
                 required
                 placeholder="e.g. Code Reviewer"
-                class="w-full px-4 py-2.5 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 text-sm text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                class="w-full px-4 py-2.5 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 text-sm text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
               >
             </div>
 
@@ -396,7 +427,7 @@ onMounted(() => {
                 type="text"
                 required
                 placeholder="e.g. llama3.1, gpt-4o, claude-3-5-sonnet"
-                class="w-full px-4 py-2.5 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 text-sm text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                class="w-full px-4 py-2.5 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 text-sm text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
               >
             </div>
 
@@ -408,11 +439,17 @@ onMounted(() => {
                 </label>
                 <select
                   v-model="form.type"
-                  class="w-full px-4 py-2.5 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 text-sm text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                  class="w-full px-4 py-2.5 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 text-sm text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
                 >
-                  <option value="chat">Chat</option>
-                  <option value="rag">RAG</option>
-                  <option value="search">Search</option>
+                  <option value="chat">
+                    Chat
+                  </option>
+                  <option value="rag">
+                    RAG
+                  </option>
+                  <option value="search">
+                    Search
+                  </option>
                 </select>
               </div>
               <div>
@@ -421,10 +458,14 @@ onMounted(() => {
                 </label>
                 <select
                   v-model="form.status"
-                  class="w-full px-4 py-2.5 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 text-sm text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                  class="w-full px-4 py-2.5 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 text-sm text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
                 >
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
+                  <option value="active">
+                    Active
+                  </option>
+                  <option value="inactive">
+                    Inactive
+                  </option>
                 </select>
               </div>
             </div>
@@ -438,7 +479,7 @@ onMounted(() => {
                 v-model="form.system_prompt"
                 rows="4"
                 placeholder="Give your agent custom rules, personality, or guidelines here..."
-                class="w-full px-4 py-2.5 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 text-sm text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none"
+                class="w-full px-4 py-2.5 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 text-sm text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all resize-none"
               />
             </div>
 
@@ -458,19 +499,26 @@ onMounted(() => {
                   class="flex items-center gap-2 p-2.5 rounded-xl border text-left transition-all"
                   :class="[
                     form.skills.includes(skill.name)
-                      ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-400'
+                      ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400'
                       : 'border-stone-200 dark:border-stone-800 text-stone-700 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-850'
                   ]"
                   @click="toggleSkill(skill.name)"
                 >
                   <Hammer :size="14" />
                   <div>
-                    <div class="text-xs font-semibold">{{ skill.name }}</div>
-                    <div class="text-[10px] opacity-75 truncate max-w-[150px]">{{ skill.title }}</div>
+                    <div class="text-xs font-semibold">
+                      {{ skill.name }}
+                    </div>
+                    <div class="text-[10px] opacity-75 truncate max-w-[150px]">
+                      {{ skill.title }}
+                    </div>
                   </div>
                 </button>
               </div>
-              <p v-else class="text-xs text-stone-400 dark:text-stone-600 italic mt-1">
+              <p
+                v-else
+                class="text-xs text-stone-400 dark:text-stone-600 italic mt-1"
+              >
                 No custom skills found in the backend.
               </p>
             </div>
@@ -486,7 +534,7 @@ onMounted(() => {
               <button
                 type="submit"
                 :disabled="saving"
-                class="flex items-center gap-2 px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium shadow-sm transition-colors"
+                class="flex items-center gap-2 px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium shadow-sm transition-colors"
               >
                 <Save :size="16" />
                 {{ saving ? 'Saving...' : (editingAgent ? 'Update Agent' : 'Create Agent') }}
@@ -512,8 +560,12 @@ onMounted(() => {
               <Trash2 :size="20" />
             </div>
             <div>
-              <h3 class="text-base font-semibold text-stone-900 dark:text-stone-100">Delete Agent</h3>
-              <p class="text-xs text-stone-500 dark:text-stone-400">This action cannot be undone.</p>
+              <h3 class="text-base font-semibold text-stone-900 dark:text-stone-100">
+                Delete Agent
+              </h3>
+              <p class="text-xs text-stone-500 dark:text-stone-400">
+                This action cannot be undone.
+              </p>
             </div>
           </div>
 
