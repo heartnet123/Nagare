@@ -55,7 +55,7 @@ class ModelResponse(BaseModel):
 
 
 class UsageStats(BaseModel):
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, protected_namespaces=())
 
     model_id: str
     model_name: str
