@@ -55,3 +55,6 @@ progress.txt
 .playwright-mcp/
 graphify-out/
 
+.claude
+.pi
+
