@@ -41,21 +41,21 @@ function getScoreTone(score: number) {
       </template>
     </DashboardPageHeader>
 
-    <div class="bg-white border border-stone-200 rounded-2xl shadow-sm overflow-hidden">
-      <div class="flex items-center gap-2 px-5 py-4 border-b border-stone-100">
+    <div class="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl shadow-sm overflow-hidden">
+      <div class="flex items-center gap-2 px-5 py-4 border-b border-stone-100 dark:border-stone-800">
         <FileText
           :size="16"
-          class="text-stone-400"
+          class="text-stone-400 dark:text-stone-500"
         />
-        <h3 class="text-sm font-semibold text-stone-900">
+        <h3 class="text-sm font-semibold text-stone-900 dark:text-stone-100">
           Query Log
         </h3>
-        <span class="ml-auto text-xs text-stone-400">Live · 18.2K today</span>
+        <span class="ml-auto text-xs text-stone-400 dark:text-stone-550">Live · 18.2K today</span>
       </div>
       <div class="overflow-x-auto hide-scrollbar">
         <table class="w-full text-sm min-w-[760px]">
           <thead>
-            <tr class="text-left text-[11px] uppercase tracking-wider text-stone-400">
+            <tr class="text-left text-[11px] uppercase tracking-wider text-stone-400 dark:text-stone-500">
               <th class="font-medium px-5 py-3">
                 Time
               </th>
@@ -83,21 +83,21 @@ function getScoreTone(score: number) {
             <tr
               v-for="l in logs"
               :key="l.id"
-              class="border-t border-stone-100 hover:bg-stone-50 transition-colors"
+              class="border-t border-stone-100 dark:border-stone-800 hover:bg-stone-50 dark:hover:bg-stone-800/40 transition-colors"
             >
-              <td class="px-5 py-3.5 font-mono text-xs text-stone-400 whitespace-nowrap">
+              <td class="px-5 py-3.5 font-mono text-xs text-stone-400 dark:text-stone-500 whitespace-nowrap">
                 {{ l.time }}
               </td>
-              <td class="px-5 py-3.5 font-mono text-xs text-stone-500">
+              <td class="px-5 py-3.5 font-mono text-xs text-stone-500 dark:text-stone-400">
                 {{ l.id }}
               </td>
-              <td class="px-5 py-3.5 text-stone-800 max-w-xs truncate">
+              <td class="px-5 py-3.5 text-stone-800 dark:text-stone-200 max-w-xs truncate">
                 {{ l.query }}
               </td>
-              <td class="px-5 py-3.5 text-stone-600 whitespace-nowrap">
+              <td class="px-5 py-3.5 text-stone-600 dark:text-stone-400 whitespace-nowrap">
                 {{ l.latency }}
               </td>
-              <td class="px-5 py-3.5 text-stone-600">
+              <td class="px-5 py-3.5 text-stone-600 dark:text-stone-400">
                 {{ l.chunks }}
               </td>
               <td class="px-5 py-3.5">

@@ -1,23 +1,49 @@
 <script setup lang="ts">
-import { Settings } from '@lucide/vue'
+import { User, Key, Bell, Palette, Cable } from '@lucide/vue'
 
-definePageMeta({
-  layout: 'default'
-})
+definePageMeta({ layout: 'default' })
 
-const features = [
-  'Workspace and profile preferences',
-  'Team members and role-based access',
-  'API keys and webhook management',
-  'Billing, usage limits, and plan details'
+const activeTab = ref('profile')
+
+const tabs = [
+  { slot: 'profile', label: 'Profile', icon: User },
+  { slot: 'api-keys', label: 'API Keys', icon: Key },
+  { slot: 'rag', label: 'RAG', icon: Cable },
+  { slot: 'notifications', label: 'Notifications', icon: Bell },
+  { slot: 'theme', label: 'Theme', icon: Palette }
 ]
 </script>
 
 <template>
-  <DashboardSectionPlaceholder
-    :icon="Settings"
-    title="Settings"
-    description="Configure your workspace, team members, billing, and integrations."
-    :features="features"
-  />
+  <div class="p-6 space-y-6">
+    <div>
+      <h1 class="text-2xl font-bold">
+        Settings
+      </h1>
+      <p class="text-muted">
+        Manage your account, API keys, and preferences.
+      </p>
+    </div>
+
+    <UTabs
+      v-model="activeTab"
+      :items="tabs"
+    >
+      <template #profile>
+        <ProfileTab />
+      </template>
+      <template #api-keys>
+        <ApiKeysTab />
+      </template>
+      <template #rag>
+        <RagConnectionsTab />
+      </template>
+      <template #notifications>
+        <NotificationsTab />
+      </template>
+      <template #theme>
+        <ThemeTab />
+      </template>
+    </UTabs>
+  </div>
 </template>

@@ -1,4 +1,14 @@
 <script setup lang="ts">
+import authMiddleware from './middleware/auth'
+
+const { init } = useAuth()
+
+addRouteMiddleware('auth', authMiddleware, { global: true })
+
+onMounted(() => {
+  void init()
+})
+
 useHead({
   meta: [
     { name: 'viewport', content: 'width=device-width, initial-scale=1' }

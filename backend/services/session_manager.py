@@ -80,7 +80,9 @@ class SessionManager:
                 SELECT id, name, model, endpoint_url, rag, archived,
                        is_important, folder, message_count,
                        total_input_tokens, total_output_tokens,
-                       created_at, updated_at, last_accessed, last_message_at
+                       created_at, updated_at, last_accessed, last_message_at,
+                       mode,
+                       (SELECT content FROM chat_messages WHERE session_id = sessions.id ORDER BY timestamp DESC LIMIT 1) as last_message_content
                 FROM sessions
                 WHERE archived = 0 AND message_count > 0
                 ORDER BY last_accessed DESC
@@ -124,6 +126,8 @@ class SessionManager:
             "last_accessed": row["last_accessed"],
             "last_message_at": row["last_message_at"],
             "messages": [],
+            "mode": row["mode"] if ("mode" in row.keys() and row["mode"] is not None) else "chat",
+            "last_message_content": row["last_message_content"] if ("last_message_content" in row.keys()) else None,
         }
 
     def _row_to_session(self, row, messages: List[dict]) -> dict:
@@ -146,6 +150,8 @@ class SessionManager:
             "last_accessed": row["last_accessed"],
             "last_message_at": row["last_message_at"],
             "messages": messages,
+            "mode": row["mode"] if ("mode" in row.keys() and row["mode"] is not None) else "chat",
+            "last_message_content": messages[-1]["content"] if messages else None,
         }
 
     # ------------------------------------------------------------------
@@ -233,6 +239,7 @@ class SessionManager:
         name: str,
         model: str = "",
         endpoint_url: str = "",
+        mode: str = "chat",
     ) -> dict:
         """Create a new session and save to database."""
         now = _utcnow_iso()
@@ -242,10 +249,10 @@ class SessionManager:
                 """
                 INSERT INTO sessions (id, name, model, endpoint_url, rag, archived,
                     is_important, folder, message_count, total_input_tokens,
-                    total_output_tokens, created_at, updated_at, last_accessed, last_message_at)
-                VALUES (?, ?, ?, ?, 0, 0, 0, NULL, 0, 0, 0, ?, ?, ?, NULL)
+                    total_output_tokens, created_at, updated_at, last_accessed, last_message_at, mode)
+                VALUES (?, ?, ?, ?, 0, 0, 0, NULL, 0, 0, 0, ?, ?, ?, NULL, ?)
                 """,
-                (session_id, name, model, endpoint_url, now, now, now),
+                (session_id, name, model, endpoint_url, now, now, now, mode),
             )
             conn.commit()
 
@@ -266,6 +273,7 @@ class SessionManager:
                 "last_accessed": now,
                 "last_message_at": None,
                 "messages": [],
+                "mode": mode,
             }
 
             self.sessions[session_id] = session
@@ -654,7 +662,9 @@ class SessionManager:
                 SELECT id, name, model, endpoint_url, rag, archived,
                        is_important, folder, message_count,
                        total_input_tokens, total_output_tokens,
-                       created_at, updated_at, last_accessed, last_message_at
+                       created_at, updated_at, last_accessed, last_message_at,
+                       mode,
+                       (SELECT content FROM chat_messages WHERE session_id = sessions.id ORDER BY timestamp DESC LIMIT 1) as last_message_content
                 FROM sessions
                 WHERE {where}
                 ORDER BY COALESCE(last_message_at, updated_at, created_at) DESC

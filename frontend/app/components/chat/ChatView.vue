@@ -1,25 +1,25 @@
 <script setup lang="ts">
 import { ref, onMounted, nextTick, computed, watch } from 'vue'
+import type { Session } from '~/types'
 import { useRoute, useRouter } from 'vue-router'
 import {
   Waves,
   ArrowUp,
-  FileText,
   User,
   Wrench,
   Search,
   Trash2,
   Archive,
   Star,
-  Check,
   Plus,
   ChevronLeft,
   ChevronRight,
-  Paperclip,
   ArchiveRestore,
   MessageSquare,
   Sparkles,
-  X
+  X,
+  AlertTriangle,
+  ArrowDown
 } from '@lucide/vue'
 
 interface ToolEvent {
@@ -37,19 +37,11 @@ interface Message {
   content: string
   streaming?: boolean
   toolEvents?: ToolEvent[]
-}
-
-interface Session {
-  id: string
-  name: string
-  model: string
-  endpoint_url: string
-  rag: boolean
-  archived: boolean
-  is_important: boolean
-  message_count: number
-  created_at: string | null
-  updated_at: string | null
+  metadata?: {
+    input_tokens?: number
+    output_tokens?: number
+    response_time_ms?: number
+  }
 }
 
 const props = withDefaults(defineProps<{
@@ -62,25 +54,32 @@ const route = useRoute()
 const router = useRouter()
 const config = useRuntimeConfig()
 const api = useApi()
+const sessionStore = useSessionStore()
+const { activeModelName, syncSelectionToModel } = useActiveSelection()
 
 // Shared Drawer states
-const isChatDrawerOpen = useState<boolean>('chat-drawer-open', () => false)
-const drawerSessionId = useState<string | null>('chat-drawer-session-id', () => null)
+const isChatDrawerOpen = sessionStore.chatDrawerOpen
+const drawerSessionId = sessionStore.drawerSessionId
 
 // Chat workspace state
 const messages = ref<Message[]>([])
-const input = ref('')
 const busy = ref(false)
 const scrollRef = ref<HTMLDivElement | null>(null)
 const errorText = ref('')
+const connectionError = ref(false)
+const showScrollButton = ref(false)
+
+// Abort controller to stop generation
+let currentAbortController: AbortController | null = null
 
 // Sessions list state
-const sessionsList = useState<Session[]>('active-sessions', () => [])
+const sessionsList = sessionStore.sessions
 const archivedSessionsList = ref<Session[]>([])
 const currentSessionId = ref<string | null>(null)
 const activeTab = ref<'active' | 'archived'>('active')
 const searchQuery = ref('')
 const sidebarCollapsed = ref(false)
+const initialQuerySent = ref(false)
 
 // Session inline edit state
 const editingSessionId = ref<string | null>(null)
@@ -118,7 +117,7 @@ const formatHistoryMessages = (apiMessages: any[]): Message[] => {
 
   for (const msg of apiMessages) {
     const isToolCall = msg.metadata?.source === 'tool' || msg.metadata?.tool_call || msg.metadata?.tool_result
-    
+
     if (isToolCall) {
       const toolName = msg.metadata?.tool_call || msg.metadata?.tool_result || ''
       if (msg.role === 'assistant') {
@@ -142,7 +141,7 @@ const formatHistoryMessages = (apiMessages: any[]): Message[] => {
         }
       } else {
         if (lastAssistant && lastAssistant.toolEvents) {
-          const event = lastAssistant.toolEvents.find(e => e.name === toolName && e.status === 'running') 
+          const event = lastAssistant.toolEvents.find(e => e.name === toolName && e.status === 'running')
             || [...lastAssistant.toolEvents].reverse().find(e => e.name === toolName)
           if (event) {
             event.output = msg.content.replace(/^.*?Tool result for `.*?`:_\n/, '')
@@ -162,7 +161,12 @@ const formatHistoryMessages = (apiMessages: any[]): Message[] => {
         id: msg.id,
         role: msg.role as 'user' | 'assistant' | 'system',
         content: msg.content,
-        toolEvents: []
+        toolEvents: [],
+        metadata: {
+          input_tokens: msg.metadata?.input_tokens,
+          output_tokens: msg.metadata?.output_tokens,
+          response_time_ms: msg.metadata?.response_time_ms
+        }
       }
       formatted.push(newMsg)
       if (msg.role === 'assistant') {
@@ -183,6 +187,9 @@ const loadSessions = async () => {
     const archivedRes = await api.sessions.listArchived(searchVal)
     sessionsList.value = activeRes.sessions
     archivedSessionsList.value = archivedRes.sessions
+    if (!searchVal) {
+      sessionStore.sessions.value = activeRes.sessions
+    }
   } catch (error) {
     console.error('Failed to load sessions:', error)
   }
@@ -198,6 +205,21 @@ const scrollToBottom = () => {
       })
     }
   })
+}
+
+const handleScroll = () => {
+  if (!scrollRef.value) return
+  const { scrollTop, scrollHeight, clientHeight } = scrollRef.value
+  showScrollButton.value = scrollHeight - scrollTop - clientHeight > 300
+}
+
+const forceScrollToBottom = () => {
+  if (scrollRef.value) {
+    scrollRef.value.scrollTo({
+      top: scrollRef.value.scrollHeight,
+      behavior: 'smooth'
+    })
+  }
 }
 
 // Watch query search to reload sessions
@@ -233,7 +255,7 @@ watch(
 )
 
 const currentSessionName = computed(() => {
-  const current = sessionsList.value.find(s => s.id === currentSessionId.value) 
+  const current = sessionsList.value.find(s => s.id === currentSessionId.value)
     || archivedSessionsList.value.find(s => s.id === currentSessionId.value)
   return current ? current.name : 'New Chat'
 })
@@ -242,6 +264,12 @@ const currentSessionModel = computed(() => {
   const current = sessionsList.value.find(s => s.id === currentSessionId.value)
     || archivedSessionsList.value.find(s => s.id === currentSessionId.value)
   return current ? current.model : null
+})
+
+watch(currentSessionModel, (newModel) => {
+  if (newModel) {
+    syncSelectionToModel(newModel)
+  }
 })
 
 // Route navigation actions / Drawer actions
@@ -257,8 +285,23 @@ const startNewChat = () => {
   if (props.isInDrawer) {
     drawerSessionId.value = null
   } else {
-    router.push({ query: {} })
+    router.push('/')
   }
+}
+
+const createSessionForMessage = async (text: string) => {
+  const name = text.length > 48 ? `${text.slice(0, 45)}...` : text
+  const session = await api.sessions.create({
+    name,
+    model: activeModelName.value || undefined
+  })
+  currentSessionId.value = session.id
+  sessionsList.value = [session, ...sessionsList.value.filter((item) => item.id !== session.id)]
+  sessionStore.sessions.value = sessionsList.value
+  if (props.isInDrawer) {
+    drawerSessionId.value = session.id
+  }
+  return session.id
 }
 
 // Session mutations
@@ -369,40 +412,53 @@ const parseSse = (buffer: string) => {
   return { events, rest }
 }
 
+const stopGeneration = () => {
+  if (currentAbortController) {
+    currentAbortController.abort()
+    currentAbortController = null
+  }
+  busy.value = false
+  // Set streaming state to false on last assistant message
+  if (messages.value.length > 0) {
+    const lastMsg = messages.value[messages.value.length - 1]
+    if (lastMsg && lastMsg.role === 'assistant') {
+      lastMsg.streaming = false
+    }
+  }
+}
+
 const send = async (text: string) => {
   const trimmed = text.trim()
   if (!trimmed || busy.value) return
 
   errorText.value = ''
-  
-  // Auto-allocate local session ID if not already in one
-  // NOTE: we do NOT call router.replace here because it triggers the
-  // route.query.session watcher which tries getHistory() before the
-  // session is created on the backend (event_stream creates it).
-  // The route gets updated after the stream creates the session.
+  connectionError.value = false
+
   let activeSid = currentSessionId.value
   if (!activeSid) {
-    activeSid = crypto.randomUUID()
-    currentSessionId.value = activeSid
+    activeSid = await createSessionForMessage(trimmed)
   }
 
   const userMsg: Message = { id: crypto.randomUUID(), role: 'user', content: trimmed }
   const assistantId = crypto.randomUUID()
   messages.value.push(userMsg, { id: assistantId, role: 'assistant', content: '', streaming: true, toolEvents: [] })
-  input.value = ''
   busy.value = true
   scrollToBottom()
+
+  currentAbortController = new AbortController()
 
   try {
     const response = await fetch(`${config.public.apiBase}/api/chat/stream`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal: currentAbortController.signal,
       body: JSON.stringify({
         messages: messages.value
           .filter((message) => message.role === 'user' || (message.role === 'assistant' && message.content.trim()))
           .map((message) => ({ role: message.role, content: message.content })),
         max_rounds: 8,
-        session_id: activeSid
+        session_id: activeSid,
+        model: activeModelName.value || undefined
       })
     })
 
@@ -438,22 +494,123 @@ const send = async (text: string) => {
           errorText.value = item.data.message || 'Agent failed'
           updateAssistant(assistantId, { content: errorText.value })
         } else if (item.event === 'done') {
-          updateAssistant(assistantId, { streaming: false })
+          updateAssistant(assistantId, {
+            streaming: false,
+            metadata: {
+              input_tokens: item.data.input_tokens,
+              output_tokens: item.data.output_tokens,
+              response_time_ms: item.data.response_time_ms
+            }
+          })
           busy.value = false
           // Session is now created on backend — update route or drawer state so refresh/bookmark works
           if (props.isInDrawer) {
             drawerSessionId.value = activeSid
           } else if (typeof route.query.session !== 'string') {
-            router.replace({ query: { session: activeSid } })
+            router.replace({ path: '/chat', query: { session: activeSid } })
           }
-          // Refresh list to pull the newly auto-created session info or update statistics
+          await loadSessions()
+        }
+        scrollToBottom()
+      }
+    }
+  } catch (error: any) {
+    if (error.name === 'AbortError') {
+      console.log('Stream aborted')
+      return
+    }
+    connectionError.value = true
+    errorText.value = 'Failed to connect to AI server. Please make sure the backend services are running.'
+    updateAssistant(assistantId, { content: errorText.value, streaming: false })
+    busy.value = false
+  }
+}
+
+const regenerateResponse = async (assistantMsgId: string) => {
+  if (busy.value) return
+  errorText.value = ''
+  connectionError.value = false
+
+  let activeSid = currentSessionId.value
+  if (!activeSid) return
+
+  const idx = messages.value.findIndex(m => m.id === assistantMsgId)
+  if (idx === -1) return
+
+  // Truncate messages local state to keep everything before this assistant message
+  messages.value = messages.value.slice(0, idx)
+
+  const assistantId = crypto.randomUUID()
+  messages.value.push({ id: assistantId, role: 'assistant', content: '', streaming: true, toolEvents: [] })
+  busy.value = true
+  scrollToBottom()
+
+  currentAbortController = new AbortController()
+
+  try {
+    const response = await fetch(`${config.public.apiBase}/api/chat/regenerate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: currentAbortController.signal,
+      body: JSON.stringify({
+        session_id: activeSid,
+        model: activeModelName.value || currentSessionModel.value || undefined
+      })
+    })
+
+    if (!response.ok || !response.body) throw new Error(`Regenerate request failed: ${response.status}`)
+
+    const reader = response.body.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
+
+    while (true) {
+      const { value, done } = await reader.read()
+      if (done) break
+      buffer += decoder.decode(value, { stream: true })
+      const parsed = parseSse(buffer)
+      buffer = parsed.rest
+
+      for (const item of parsed.events) {
+        if (item.event === 'delta') {
+          const current = messages.value.find((message) => message.id === assistantId)
+          updateAssistant(assistantId, { content: `${current?.content || ''}${item.data.content || ''}` })
+        } else if (item.event === 'replace_last') {
+          updateAssistant(assistantId, { content: item.data.content || '' })
+        } else if (item.event === 'tool_start') {
+          addToolEvent(assistantId, {
+            id: crypto.randomUUID(),
+            name: item.data.name,
+            input: item.data.input,
+            status: 'running'
+          })
+        } else if (item.event === 'tool_result') {
+          finishToolEvent(assistantId, item.data.name, item.data.output || '', item.data.ok !== false)
+        } else if (item.event === 'error') {
+          errorText.value = item.data.message || 'Agent failed'
+          updateAssistant(assistantId, { content: errorText.value })
+        } else if (item.event === 'done') {
+          updateAssistant(assistantId, {
+            streaming: false,
+            metadata: {
+              input_tokens: item.data.input_tokens,
+              output_tokens: item.data.output_tokens,
+              response_time_ms: item.data.response_time_ms
+            }
+          })
+          busy.value = false
           loadSessions()
         }
         scrollToBottom()
       }
     }
-  } catch (error) {
-    errorText.value = error instanceof Error ? error.message : 'Chat request failed'
+  } catch (error: any) {
+    if (error.name === 'AbortError') {
+      console.log('Regenerate stream aborted')
+      return
+    }
+    connectionError.value = true
+    errorText.value = 'Failed to connect to AI server. Please make sure the backend services are running.'
     updateAssistant(assistantId, { content: errorText.value, streaming: false })
     busy.value = false
   }
@@ -462,18 +619,11 @@ const send = async (text: string) => {
 onMounted(() => {
   loadSessions()
   const q = typeof route.query.q === 'string' ? route.query.q : ''
-  if (q) {
+  if (q && !initialQuerySent.value) {
+    initialQuerySent.value = true
     send(q)
   }
 })
-
-const handleKeyDown = (e: KeyboardEvent) => {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    if (e.isComposing) return
-    e.preventDefault()
-    send(input.value)
-  }
-}
 
 const empty = computed(() => messages.value.length === 0)
 const filteredSessions = computed(() => activeTab.value === 'active' ? sessionsList.value : archivedSessionsList.value)
@@ -548,7 +698,7 @@ const filteredSessions = computed(() => activeTab.value === 'active' ? sessionsL
         >
           <div class="flex items-center gap-2.5 min-w-0 flex-1">
             <MessageSquare :size="16" class="text-stone-400 shrink-0" />
-            
+
             <!-- Inline rename field -->
             <div v-if="editingSessionId === s.id" class="flex-1 min-w-0" @click.stop>
               <input
@@ -627,7 +777,7 @@ const filteredSessions = computed(() => activeTab.value === 'active' ? sessionsL
             <ChevronRight v-if="sidebarCollapsed" :size="18" />
             <ChevronLeft v-else :size="18" />
           </button>
-          
+
           <div class="flex flex-col">
             <h2 class="text-sm font-semibold text-stone-800 dark:text-stone-100 leading-tight">
               {{ currentSessionName }}
@@ -643,7 +793,7 @@ const filteredSessions = computed(() => activeTab.value === 'active' ? sessionsL
             <Sparkles :size="12" class="animate-spin" />
             Thinking...
           </div>
-          
+
           <button
             v-if="isInDrawer"
             class="p-1.5 rounded-lg text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
@@ -658,9 +808,20 @@ const filteredSessions = computed(() => activeTab.value === 'active' ? sessionsL
       <!-- Messages Stream Scroll Workspace -->
       <div
         ref="scrollRef"
-        class="flex-1 overflow-y-auto px-6 hide-scrollbar"
+        class="flex-1 overflow-y-auto px-6 hide-scrollbar relative"
+        @scroll="handleScroll"
       >
         <div class="max-w-3xl mx-auto w-full py-8">
+
+          <!-- Connection Error Alert Banner -->
+          <div v-if="connectionError" class="mb-6 p-4 rounded-xl border border-red-200 bg-red-50 text-red-800 dark:bg-red-950/30 dark:border-red-900/60 dark:text-red-400 text-sm flex gap-3 items-start shadow-sm">
+            <AlertTriangle class="shrink-0 text-red-500 mt-0.5" :size="18" />
+            <div>
+              <h4 class="font-bold mb-1">Server Connection Offline</h4>
+              <p>{{ errorText }}</p>
+            </div>
+          </div>
+
           <!-- Empty state -->
           <div
             v-if="empty"
@@ -690,15 +851,15 @@ const filteredSessions = computed(() => activeTab.value === 'active' ? sessionsL
               tag="div"
               class="space-y-8"
             >
-              <div
-                v-for="m in messages"
+              <ChatMessageBubble
+                v-for="(m, index) in messages"
                 :key="m.id"
-                class="flex gap-4"
+                :message="m"
+                :is-last="index === messages.length - 1"
+                :busy="busy"
+                @regenerate="regenerateResponse"
               >
-                <div
-                  class="shrink-0 flex items-center justify-center w-8 h-8 rounded-full"
-                  :class="m.role === 'user' ? 'bg-stone-200 dark:bg-stone-800 text-stone-600 dark:text-stone-300' : 'bg-blue-600 text-white'"
-                >
+                <template #avatar>
                   <User
                     v-if="m.role === 'user'"
                     :size="16"
@@ -709,89 +870,31 @@ const filteredSessions = computed(() => activeTab.value === 'active' ? sessionsL
                     :size="16"
                     :stroke-width="2"
                   />
-                </div>
-                
-                <div class="min-w-0 flex-1 pt-0.5">
-                  <div class="text-xs font-semibold text-stone-500 dark:text-stone-400 mb-1.5">
-                    {{ m.role === 'user' ? 'You' : 'NAGARE' }}
-                  </div>
-                  <div class="text-[15px] leading-relaxed text-stone-800 dark:text-stone-200 whitespace-pre-wrap">
-                    {{ m.content }}
-                    <span
-                      v-if="m.streaming"
-                      class="inline-block w-1.5 h-4 ml-0.5 -mb-0.5 bg-blue-500 rounded-sm animate-pulse"
-                    />
-                  </div>
-
-                  <!-- Inline dynamic tool activity logs -->
-                  <div
-                    v-if="m.toolEvents && m.toolEvents.length > 0"
-                    class="mt-4 space-y-2 border-l border-stone-200 dark:border-stone-800 pl-4"
-                  >
-                    <div class="text-[11px] font-semibold uppercase tracking-wider text-stone-400 mb-2">
-                      Tool Activity
-                    </div>
-                    <div
-                      v-for="tool in m.toolEvents"
-                      :key="tool.id"
-                      class="rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-900 p-3 text-xs text-stone-600 dark:text-stone-300"
-                    >
-                      <div class="flex items-center justify-between gap-2 mb-1">
-                        <span class="flex items-center gap-1.5 font-semibold text-stone-700 dark:text-stone-200">
-                          <Wrench :size="13" />
-                          {{ tool.name }}
-                        </span>
-                        <span
-                          class="text-[10px] font-semibold uppercase"
-                          :class="tool.status === 'error' ? 'text-red-600' : tool.status === 'done' ? 'text-emerald-600' : 'text-blue-600'"
-                        >
-                          {{ tool.status }}
-                        </span>
-                      </div>
-                      <pre v-if="tool.output" class="max-h-32 overflow-auto font-mono text-[11px] whitespace-pre-wrap rounded-lg bg-white dark:bg-stone-800 p-2 border border-stone-100 dark:border-stone-700 mt-2">{{ tool.output }}</pre>
-                    </div>
-                  </div>
-                </div>
-              </div>
+                </template>
+              </ChatMessageBubble>
             </TransitionGroup>
           </div>
         </div>
+
+        <!-- Floating Scroll to Bottom pill -->
+        <button
+          v-if="showScrollButton"
+          class="absolute bottom-4 right-8 flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg text-xs font-semibold select-none z-10 transition-transform active:scale-95"
+          @click="forceScrollToBottom"
+        >
+          <ArrowDown :size="14" />
+          Recent message
+        </button>
       </div>
 
       <!-- Composer at bottom -->
       <div class="px-6 pb-6 pt-2 shrink-0 bg-gradient-to-t from-white dark:from-stone-950 via-white dark:via-stone-950 to-transparent">
         <div class="max-w-3xl mx-auto w-full">
-          <div class="relative w-full bg-white dark:bg-stone-900 rounded-2xl shadow-sm border border-stone-200/80 dark:border-stone-800/80 overflow-hidden flex flex-col transition-shadow duration-300 focus-within:ring-4 focus-within:ring-blue-500/10 focus-within:border-blue-500 dark:focus-within:border-blue-500">
-            <textarea
-              v-model="input"
-              class="w-full h-20 p-4 resize-none bg-transparent border-0 outline-none text-stone-800 dark:text-stone-200 placeholder-stone-400"
-              placeholder="Ask a question or enter a command..."
-              aria-label="Message input"
-              @keydown="handleKeyDown"
-            />
-            <div class="flex items-center justify-end px-3 py-2.5 gap-2 bg-stone-50/50 dark:bg-stone-900/50 border-t border-stone-100 dark:border-stone-800">
-              <button
-                class="p-2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"
-                aria-label="Attach file"
-              >
-                <Paperclip
-                  :size="18"
-                  :stroke-width="1.5"
-                />
-              </button>
-              <button
-                :disabled="busy || !input.trim()"
-                class="flex items-center justify-center w-9 h-9 rounded-full bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:hover:bg-blue-600 text-white shadow-sm transition-colors"
-                aria-label="Send message"
-                @click="send(input)"
-              >
-                <ArrowUp
-                  :size="18"
-                  :stroke-width="2"
-                />
-              </button>
-            </div>
-          </div>
+          <ChatComposer
+            :busy="busy"
+            @send="send"
+            @stop="stopGeneration"
+          />
         </div>
       </div>
     </div>

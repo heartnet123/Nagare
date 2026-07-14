@@ -1,3 +1,4 @@
+import type { NavGroup } from '~/types'
 import {
   BarChart2,
   Database,
@@ -12,7 +13,7 @@ import {
   Cpu
 } from '@lucide/vue'
 
-export const navGroups = [
+export const navGroups: NavGroup[] = [
   {
     title: 'EVALUATIONS',
     items: [
@@ -41,4 +42,3 @@ export const navGroups = [
     ]
   }
 ]
-

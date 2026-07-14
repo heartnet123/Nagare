@@ -39,6 +39,8 @@ class SessionResponse(BaseModel):
     has_documents: bool = False
     has_images: bool = False
     mode: Optional[str] = None
+    last_message_content: Optional[str] = None
+
 
 
 class SessionCreateRequest(BaseModel):
@@ -47,6 +49,7 @@ class SessionCreateRequest(BaseModel):
     name: str = "New Chat"
     model: str = ""
     endpoint_url: str = ""
+    mode: Optional[str] = "chat"
 
 
 class SessionUpdateRequest(BaseModel):

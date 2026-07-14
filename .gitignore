@@ -40,6 +40,8 @@ Thumbs.db
 .omc/
 .omo/
 .serena/
+.superpowers/
+.workflow/
 
 # --- Logs ---
 *.log
@@ -48,3 +50,12 @@ logs/
 # --- Local notes & scratch ---
 ROADMAP.md
 progress.txt
+
+# --- Tools and Generated Artifacts ---
+.omx/
+.playwright-mcp/
+graphify-out/
+
+.claude
+.pi
+.kilo/

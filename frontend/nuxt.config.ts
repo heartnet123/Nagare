@@ -11,14 +11,6 @@ export default defineNuxtConfig({
 
   css: ['~/assets/css/main.css'],
 
-  runtimeConfig: {
-    public: {
-      apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:8000'
-    }
-  },
-
-  compatibilityDate: '2025-01-15',
-
   colorMode: {
     preference: 'system',
     fallback: 'light',
@@ -26,6 +18,22 @@ export default defineNuxtConfig({
     storageKey: 'nagare-color-mode',
     dataValue: 'theme'
   },
+  runtimeConfig: {
+    public: {
+      apiBase: process.env.NUXT_PUBLIC_API_BASE || ''
+    }
+  },
+
+  // Proxy /api requests to the FastAPI backend.
+  // This keeps cookies on the same origin (localhost:3000) so httpOnly
+  // cookies and CSRF tokens work correctly.
+  routeRules: {
+    '/api/**': {
+      proxy: 'http://localhost:8000/api/**'
+    }
+  },
+
+  compatibilityDate: '2025-01-15',
 
   eslint: {
     config: {
@@ -34,5 +42,9 @@ export default defineNuxtConfig({
         braceStyle: '1tbs'
       }
     }
+  },
+  icon: {
+    localApiEndpoint: '/_nuxt_icon'
   }
+
 })

@@ -69,7 +69,8 @@ class ToolExecutor:
             'list_skills': self._list_skills,
             'use_skill': self._use_skill,
             'mcp_list_tools': self._mcp_list_tools,
-            'mcp_call_tool': self._mcp_call_tool
+            'mcp_call_tool': self._mcp_call_tool,
+            'search_knowledge': self._search_knowledge
         }
         handler = handlers.get(call.name)
         if handler is None:
@@ -78,6 +79,19 @@ class ToolExecutor:
             return handler(call.arguments)
         except Exception as exc:
             return ToolResult(False, f'{call.name} failed: {exc}')
+
+    def _search_knowledge(self, args: dict) -> ToolResult:
+        query = str(args.get('query', '')).strip()
+        limit = int(args.get('limit', 5))
+        if not query:
+            return ToolResult(False, 'query is required')
+        try:
+            from services.knowledge import KnowledgeStore
+            store = KnowledgeStore(self.data_dir)
+            results = store.search(query, limit)
+            return ToolResult(True, json.dumps(results, indent=2))
+        except Exception as exc:
+            return ToolResult(False, f'search_knowledge failed: {exc}')
 
     def _safe_path(self, raw: str = '.') -> Path:
         candidate = (self.workspace / raw).resolve()

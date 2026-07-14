@@ -21,6 +21,7 @@ TOOL_DOCS = '''Available tools:
 - use_skill: {"name":"project"}
 - mcp_list_tools: {}
 - mcp_call_tool: {"server":"name","tool":"tool_name","arguments":{}}
+- search_knowledge: {"query":"query string","limit":5}
 
 Call tools with XML only when needed:
 <tool name="read_file">
@@ -41,7 +42,7 @@ def sse_pack(event: str, data: dict) -> str:
     return f'event: {event}\ndata: {json.dumps(data)}\n\n'
 
 
-def build_system_prompt(memories: list[dict], skills: list[dict], system_prompt_append: str = '') -> str:
+def build_system_prompt(memories: list[dict], skills: list[dict], system_prompt_append: str = '', tools: bool = True) -> str:
     # Show pinned memories first, then by recency
     pinned = [m for m in memories if m.get('pinned')]
     rest = [m for m in memories if not m.get('pinned')]
@@ -59,7 +60,8 @@ def build_system_prompt(memories: list[dict], skills: list[dict], system_prompt_
     memory_text = '\n'.join(memory_lines) or '- none'
 
     skill_text = '\n'.join(f'- {item.get("name")}: {item.get("title")}' for item in skills[:20]) or '- none'
-    base = f'''You are NAGARE's local agent. Answer clearly and use tools when useful.
+    if tools:
+        base = f'''You are NAGARE's local agent. Answer clearly and use tools when useful.
 
 {TOOL_DOCS}
 
@@ -68,6 +70,22 @@ Rules:
 - Do not show raw tool XML to the user.
 - File paths are relative to workspace.
 - Summarize tool results instead of dumping long files.
+- When the user asks about uploaded documents, a knowledge base, files, or facts, use search_knowledge first to query context.
+- Always cite sources for facts retrieved from the knowledge base using the format [Source: filename, page N] or [Source: filename].
+- Provide a confidence score or statement if the RAG search results have low/high confidence.
+
+Memories:
+{memory_text}
+
+Skills:
+{skill_text}
+'''
+    else:
+        base = f'''You are NAGARE's local agent. Answer clearly.
+
+Rules:
+- File paths are relative to workspace.
+- When the user asks about uploaded documents, a knowledge base, files, or facts, cite sources using the format [Source: filename, page N] or [Source: filename].
 
 Memories:
 {memory_text}
@@ -80,7 +98,22 @@ Skills:
     return base
 
 
-async def stream_agent(messages: list[dict], settings: AgentSettings | None = None):
+def count_tokens(text: str, model: str = "gpt-4o") -> int:
+    try:
+        import tiktoken
+        try:
+            encoding = tiktoken.encoding_for_model(model)
+        except Exception:
+            encoding = tiktoken.get_encoding("cl100k_base")
+        return len(encoding.encode(text))
+    except (ImportError, ModuleNotFoundError):
+        return len(text) // 4  # fallback rough estimate
+
+
+async def stream_agent(messages: list[dict], settings: AgentSettings | None = None, tools: bool = True):
+    import time
+    start_time = time.time()
+    
     settings = settings or AgentSettings.from_config_file()
     data_dir = default_data_dir()
     workspace = default_workspace()
@@ -95,23 +128,40 @@ async def stream_agent(messages: list[dict], settings: AgentSettings | None = No
         pass
     executor = ToolExecutor(workspace=workspace, data_dir=data_dir)
     skills = SkillsStore(data_dir / 'skills').list()
-    history = [{'role': 'system', 'content': build_system_prompt(executor.memory_svc.manager.load_all(), skills, _system_prompt_append)}]
+    
+    system_prompt = build_system_prompt(executor.memory_svc.manager.load_all(), skills, _system_prompt_append, tools=tools)
+    history = [{'role': 'system', 'content': system_prompt}]
     history.extend(messages)
+    
+    # Calculate input tokens
+    input_text = system_prompt + "\n" + "\n".join(f"{m.get('role')}: {m.get('content')}" for m in messages)
+    input_tokens = count_tokens(input_text, settings.model)
+    
     client = OpenAICompatibleClient(settings.base_url, settings.api_key)
 
+    total_output_tokens = 0
+    full_text = ''
+    
     for round_index in range(settings.max_rounds):
-        full_text = ''
+        round_text = ''
         async for token in client.stream_chat(history, settings.model):
+            round_text += token
             full_text += token
             yield {'event': 'delta', 'data': {'content': token}}
 
-        visible, calls = parse_tool_blocks(full_text)
-        if visible != full_text:
+        visible, calls = parse_tool_blocks(round_text)
+        if visible != round_text:
             yield {'event': 'replace_last', 'data': {'content': visible}}
         history.append({'role': 'assistant', 'content': visible})
 
-        if not calls:
-            yield {'event': 'done', 'data': {}}
+        if not calls or not tools:
+            elapsed_ms = int((time.time() - start_time) * 1000)
+            output_tokens = count_tokens(full_text, settings.model)
+            yield {'event': 'done', 'data': {
+                'input_tokens': input_tokens,
+                'output_tokens': output_tokens,
+                'response_time_ms': elapsed_ms
+            }}
             return
 
         tool_summaries = []
@@ -124,5 +174,12 @@ async def stream_agent(messages: list[dict], settings: AgentSettings | None = No
 
         history.append({'role': 'user', 'content': 'Tool results:\n' + '\n\n'.join(tool_summaries)})
 
+    elapsed_ms = int((time.time() - start_time) * 1000)
+    output_tokens = count_tokens(full_text, settings.model)
     yield {'event': 'error', 'data': {'message': 'agent reached max rounds'}}
-    yield {'event': 'done', 'data': {}}
+    yield {'event': 'done', 'data': {
+        'input_tokens': input_tokens,
+        'output_tokens': output_tokens,
+        'response_time_ms': elapsed_ms
+    }}
+

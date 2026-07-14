@@ -21,7 +21,7 @@ const topQueries = [
       description="Usage, engagement, and answer-quality trends across your workspace over the last 7 days."
     >
       <template #action>
-        <button class="flex items-center gap-2 px-4 py-2 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 text-sm font-medium shadow-sm transition-colors">
+        <button class="flex items-center gap-2 px-4 py-2 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:bg-stone-50 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-300 text-sm font-medium shadow-sm transition-colors">
           <BarChart2
             :size="16"
             :stroke-width="1.5"
@@ -59,57 +59,57 @@ const topQueries = [
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 mb-8">
-      <div class="lg:col-span-7 p-5 rounded-2xl bg-white border border-stone-200 shadow-sm">
+      <div class="lg:col-span-7 p-5 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-sm">
         <div class="mb-4">
-          <h3 class="text-sm font-semibold text-stone-900">
+          <h3 class="text-sm font-semibold text-stone-900 dark:text-stone-100">
             Query Volume
           </h3>
-          <p class="text-xs text-stone-400">
+          <p class="text-xs text-stone-400 dark:text-stone-500">
             queries per day · last 7 days
           </p>
         </div>
         <DashboardAreaChart
           :data="[2800, 3200, 3000, 3600, 4100, 3900, 4200]"
-          color="#3b82f6"
+          color="#00C16A"
           :height="180"
         />
       </div>
-      <div class="lg:col-span-5 p-5 rounded-2xl bg-white border border-stone-200 shadow-sm">
+      <div class="lg:col-span-5 p-5 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-sm">
         <div class="mb-4">
-          <h3 class="text-sm font-semibold text-stone-900">
+          <h3 class="text-sm font-semibold text-stone-900 dark:text-stone-100">
             Queries by Day
           </h3>
-          <p class="text-xs text-stone-400">
+          <p class="text-xs text-stone-400 dark:text-stone-500">
             this week
           </p>
         </div>
         <DashboardBarChart
           :data="[2800, 3200, 3000, 3600, 4100, 3900, 4200]"
           :labels="['M', 'T', 'W', 'T', 'F', 'S', 'S']"
-          color="#6366f1"
+          color="#00A155"
           :height="180"
         />
       </div>
     </div>
 
-    <div class="bg-white border border-stone-200 rounded-2xl shadow-sm overflow-hidden">
-      <div class="px-5 py-4 border-b border-stone-100">
-        <h3 class="text-sm font-semibold text-stone-900">
+    <div class="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-stone-100 dark:border-stone-800">
+        <h3 class="text-sm font-semibold text-stone-900 dark:text-stone-100">
           Top Queries
         </h3>
       </div>
-      <div class="divide-y divide-stone-100">
+      <div class="divide-y divide-stone-100 dark:divide-stone-800">
         <div
           v-for="(t, i) in topQueries"
           :key="i"
           class="flex items-center gap-4 px-5 py-3.5"
         >
-          <span class="text-xs font-mono text-stone-300 w-4 shrink-0">{{ i + 1 }}</span>
-          <span class="text-sm text-stone-800 flex-1 truncate">{{ t.q }}</span>
-          <span class="text-xs font-medium text-stone-500 shrink-0">
+          <span class="text-xs font-mono text-stone-300 dark:text-stone-700 w-4 shrink-0">{{ i + 1 }}</span>
+          <span class="text-sm text-stone-800 dark:text-stone-200 flex-1 truncate">{{ t.q }}</span>
+          <span class="text-xs font-medium text-stone-500 dark:text-stone-400 shrink-0">
             {{ t.count.toLocaleString() }}
           </span>
-          <span class="text-xs font-semibold text-emerald-600 w-12 text-right shrink-0">
+          <span class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 w-12 text-right shrink-0">
             {{ t.trend }}
           </span>
         </div>

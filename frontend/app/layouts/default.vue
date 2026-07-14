@@ -1,59 +1,16 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { Menu, LayoutGrid, ChevronDown, Sun, Moon, Monitor } from '@lucide/vue'
+import { Menu } from '@lucide/vue'
 
-const sidebarOpen = ref(true)
-const mobileMenuOpen = ref(false)
-
-const colorMode = useColorMode()
-
-const themeIcon = computed(() => ({
-  light: Sun,
-  dark: Moon,
-  system: Monitor
-}[colorMode.preference] ?? Sun))
-
-function cycleTheme() {
-  const order = ['light', 'dark', 'system'] as const
-  const idx = order.indexOf(colorMode.preference as typeof order[number])
-  colorMode.preference = order[(idx + 1) % 3] as string
-}
-
-const route = useRoute()
-const isChatOpen = useState<boolean>('chat-drawer-open', () => false)
-
-// Automatically close the chat drawer when navigating to /chat page
-watch(
-  () => route.path,
-  (newPath) => {
-    if (newPath === '/chat') {
-      isChatOpen.value = false
-    }
-  }
-)
+const { sidebarOpen, mobileMenuOpen, toggleSidebar, openMobileMenu, closeMobileMenu } = useAppStore()
 </script>
 
 <template>
-  <div class="flex h-screen w-full overflow-hidden bg-[#FAFAFA] dark:bg-stone-950 text-stone-800 dark:text-stone-50 font-sans">
-    
+  <div class="flex h-screen w-full overflow-hidden bg-[var(--ui-bg)] text-[var(--ui-text)] font-sans pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
     <DashboardSidebar
       :open="sidebarOpen"
       :mobile-open="mobileMenuOpen"
-      @close-mobile="mobileMenuOpen = false"
+      @close-mobile="closeMobileMenu"
     />
-    
-
-    <!-- Sliding Chat Drawer next to Sidebar -->
-    <Transition name="slide">
-      <div
-        v-if="isChatOpen"
-        class="border-r border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-950 flex flex-col shrink-0 relative z-30 overflow-hidden"
-      >
-        <div class="w-[440px] h-full flex flex-col">
-          <ChatChatView :is-in-drawer="true" />
-        </div>
-      </div>
-    </Transition>
 
     <main class="flex-1 flex flex-col min-w-0 overflow-hidden relative">
       <header class="flex items-center justify-between px-6 py-4 shrink-0">
@@ -61,7 +18,7 @@ watch(
           <button
             class="p-1.5 -ml-2 rounded-lg text-stone-500 hover:bg-stone-200 md:hidden"
             aria-label="Open menu"
-            @click="mobileMenuOpen = true"
+            @click="openMobileMenu"
           >
             <Menu
               :size="20"
@@ -71,24 +28,11 @@ watch(
           <button
             class="hidden md:block p-1.5 -ml-2 rounded-lg text-stone-500 hover:bg-stone-200"
             aria-label="Toggle sidebar"
-            @click="sidebarOpen = !sidebarOpen"
+            @click="toggleSidebar"
           >
             <Menu
               :size="20"
               :stroke-width="1.5"
-            />
-          </button>
-
-          <button class="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-stone-200 bg-white shadow-sm text-sm font-medium text-stone-700 hover:bg-stone-50 transition-colors">
-            <LayoutGrid
-              :size="16"
-              :stroke-width="1.5"
-            />
-            Default Workspace
-            <ChevronDown
-              :size="14"
-              :stroke-width="1.5"
-              class="ml-1 text-stone-400"
             />
           </button>
         </div>
@@ -100,20 +44,8 @@ watch(
               All Systems Operational
             </span>
           </div>
-          <button
-            class="p-2 rounded-full bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-50 hover:bg-stone-50 dark:hover:bg-stone-700 shadow-sm transition-colors"
-            :aria-label="`Theme: ${colorMode.preference}`"
-            @click="cycleTheme"
-          >
-            <component
-              :is="themeIcon"
-              :size="18"
-              :stroke-width="1.5"
-            />
-          </button>
-          <div class="flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white font-medium text-sm shadow-sm">
-            N
-          </div>
+          <UiThemeToggle />
+          <UiUserDropdown />
         </div>
       </header>
 
@@ -123,16 +55,3 @@ watch(
     </main>
   </div>
 </template>
-
-<style scoped>
-.slide-enter-active,
-.slide-leave-active {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.slide-enter-from,
-.slide-leave-to {
-  width: 0px;
-  opacity: 0;
-}
-</style>

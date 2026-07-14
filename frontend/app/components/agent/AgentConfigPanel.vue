@@ -10,7 +10,7 @@ import {
   X,
   KeyRound,
   Cpu,
-  Bot,
+  Bot
 } from '@lucide/vue'
 import { useApi } from '~/composables/useApi'
 
@@ -29,7 +29,7 @@ const api = useApi()
 const config = ref<AgentConfig | null>(null)
 const loading = ref(true)
 const fetchError = ref<string | null>(null)
-const toast = ref<{ type: 'success' | 'error'; message: string } | null>(null)
+const toast = ref<{ type: 'success' | 'error', message: string } | null>(null)
 let toastTimer: ReturnType<typeof setTimeout> | null = null
 
 // Edit modal
@@ -41,7 +41,7 @@ const form = reactive({
   model: '',
   max_rounds: 8,
   workspace: '',
-  system_prompt_append: '',
+  system_prompt_append: ''
 })
 
 // Reset confirm
@@ -94,7 +94,7 @@ async function saveConfig() {
       model: form.model,
       max_rounds: form.max_rounds,
       workspace: form.workspace,
-      system_prompt_append: form.system_prompt_append,
+      system_prompt_append: form.system_prompt_append
     }
     // Only send api_key if the user typed something (write-only field)
     if (form.api_key.trim()) {
@@ -114,7 +114,7 @@ async function saveConfig() {
 async function confirmReset() {
   resetting.value = true
   try {
-    const result = await api.agentConfig.reset() as { ok: boolean; message: string }
+    const result = await api.agentConfig.reset() as { ok: boolean, message: string }
     showResetConfirm.value = false
     await fetchConfig()
     showToast('success', result.message ?? 'Configuration reset to defaults.')
@@ -137,7 +137,10 @@ function truncate(str: string, max = 60) {
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-2">
-        <Bot :size="18" class="text-blue-500" />
+        <Bot
+          :size="18"
+          class="text-blue-500"
+        />
         <h2 class="text-sm font-semibold text-stone-900 dark:text-stone-100 uppercase tracking-wider">
           Agent Configuration
         </h2>
@@ -160,11 +163,19 @@ function truncate(str: string, max = 60) {
           'flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium border',
           toast.type === 'success'
             ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300'
-            : 'bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-800 text-red-700 dark:text-red-300',
+            : 'bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-800 text-red-700 dark:text-red-300'
         ]"
       >
-        <CheckCircle v-if="toast.type === 'success'" :size="16" class="shrink-0" />
-        <AlertCircle v-else :size="16" class="shrink-0" />
+        <CheckCircle
+          v-if="toast.type === 'success'"
+          :size="16"
+          class="shrink-0"
+        />
+        <AlertCircle
+          v-else
+          :size="16"
+          class="shrink-0"
+        />
         {{ toast.message }}
       </div>
     </Transition>
@@ -174,7 +185,10 @@ function truncate(str: string, max = 60) {
       v-if="fetchError"
       class="flex items-center gap-3 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-300"
     >
-      <AlertCircle :size="16" class="shrink-0" />
+      <AlertCircle
+        :size="16"
+        class="shrink-0"
+      />
       {{ fetchError }}
     </div>
 
@@ -307,7 +321,10 @@ function truncate(str: string, max = 60) {
               class="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-medium shadow-sm transition-all disabled:opacity-60"
               @click="confirmReset"
             >
-              <RotateCcw :size="15" :class="{ 'animate-spin': resetting }" />
+              <RotateCcw
+                :size="15"
+                :class="{ 'animate-spin': resetting }"
+              />
               {{ resetting ? 'Resetting…' : 'Reset' }}
             </button>
           </div>
@@ -326,7 +343,10 @@ function truncate(str: string, max = 60) {
           <!-- Modal header -->
           <div class="flex items-center justify-between pb-4 border-b border-stone-100 dark:border-stone-800">
             <div class="flex items-center gap-2">
-              <Settings2 :size="18" class="text-blue-500" />
+              <Settings2
+                :size="18"
+                class="text-blue-500"
+              />
               <h3 class="text-base font-semibold text-stone-900 dark:text-stone-100">
                 Edit Agent Configuration
               </h3>
@@ -340,7 +360,10 @@ function truncate(str: string, max = 60) {
           </div>
 
           <!-- Form -->
-          <form class="mt-5 space-y-4" @submit.prevent="saveConfig">
+          <form
+            class="mt-5 space-y-4"
+            @submit.prevent="saveConfig"
+          >
             <!-- LLM Endpoint -->
             <div>
               <label class="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1.5">
