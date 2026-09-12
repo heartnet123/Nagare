@@ -20,7 +20,17 @@ create table if not exists agents (
     model text not null,
     system_prompt text not null default '',
     skills text default '[]',
+    type text default 'chat',
     status text default 'active',
+    description text default '',
+    role_title text default '',
+    category text default 'Custom',
+    tags text default '[]',
+    capabilities text default '[]',
+    tools text default '[]',
+    recent_wins text default '[]',
+    uses_count integer default 0,
+    completion_rate integer default 95,
     created_at text not null,
     updated_at text not null,
     foreign key (user_id) references users(id) on delete cascade
@@ -159,6 +169,23 @@ def init_db(conn: sqlite3.Connection) -> None:
     columns = [row["name"] for row in cursor.fetchall()]
     if "mode" not in columns:
         conn.execute("ALTER TABLE sessions ADD COLUMN mode TEXT")
+
+    cursor.execute("PRAGMA table_info(agents)")
+    agent_cols = [row["name"] for row in cursor.fetchall()]
+    for col_name, col_def in [
+        ("type", "TEXT DEFAULT 'chat'"),
+        ("description", "TEXT DEFAULT ''"),
+        ("role_title", "TEXT DEFAULT ''"),
+        ("category", "TEXT DEFAULT 'Custom'"),
+        ("tags", "TEXT DEFAULT '[]'"),
+        ("capabilities", "TEXT DEFAULT '[]'"),
+        ("tools", "TEXT DEFAULT '[]'"),
+        ("recent_wins", "TEXT DEFAULT '[]'"),
+        ("uses_count", "INTEGER DEFAULT 0"),
+        ("completion_rate", "INTEGER DEFAULT 95"),
+    ]:
+        if col_name not in agent_cols:
+            conn.execute(f"ALTER TABLE agents ADD COLUMN {col_name} {col_def}")
 
     conn.executescript('''
     create table if not exists models (

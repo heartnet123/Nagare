@@ -9,6 +9,15 @@ class AgentBase(BaseModel):
     skills: List[str] = []
     type: str = "chat"  # "rag" | "chat" | "search"
     status: str = "active"  # "active" | "inactive"
+    role_title: str = ""
+    category: str = "Custom"
+    description: str = ""
+    tags: List[str] = []
+    capabilities: List[str] = []
+    tools: List[str] = []
+    recent_wins: List[dict] = []
+    uses_count: int = 0
+    completion_rate: int = 95
 
 
 class AgentCreate(AgentBase):
@@ -24,6 +33,15 @@ class AgentUpdate(BaseModel):
     skills: Optional[List[str]] = None
     type: Optional[str] = None
     status: Optional[str] = None
+    role_title: Optional[str] = None
+    category: Optional[str] = None
+    description: Optional[str] = None
+    tags: Optional[List[str]] = None
+    capabilities: Optional[List[str]] = None
+    tools: Optional[List[str]] = None
+    recent_wins: Optional[List[dict]] = None
+    uses_count: Optional[int] = None
+    completion_rate: Optional[int] = None
 
 
 class AgentResponse(AgentBase):
