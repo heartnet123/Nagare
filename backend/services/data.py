@@ -97,6 +97,47 @@ on chat_messages(session_id, timestamp);
 create index if not exists idx_sessions_active
 on sessions(archived, last_accessed);
 
+create table if not exists inbox_projects (
+    id text primary key,
+    user_id text not null,
+    name text not null,
+    source_name text not null,
+    preview_url text,
+    status text not null default 'queued',
+    created_at text not null,
+    updated_at text not null,
+    foreign key (user_id) references users(id) on delete cascade
+);
+
+create index if not exists idx_inbox_projects_user on inbox_projects(user_id);
+
+create table if not exists inbox_decisions (
+    id text primary key,
+    user_id text,
+    title text not null,
+    subtitle text not null default '',
+    priority text not null default 'normal',
+    priority_label text not null default 'Normal',
+    time_ago text not null default '',
+    agent_name text not null default '',
+    agent_role text not null default '',
+    agent_initials text not null default '',
+    agent_color text not null default '',
+    comments_count integer default 0,
+    category text default 'Urgent',
+    project text default '',
+    confidence_score integer default 90,
+    summary text not null default '',
+    key_rationale text not null default '[]',
+    potential_risks text not null default '[]',
+    alternatives text not null default '[]',
+    files text not null default '[]',
+    status text default 'pending',
+    selected_alternative text default 'opt-a',
+    created_at text not null,
+    updated_at text not null
+);
+
 create table if not exists models (
     id text primary key,
     name text not null,
@@ -169,6 +210,12 @@ def init_db(conn: sqlite3.Connection) -> None:
     columns = [row["name"] for row in cursor.fetchall()]
     if "mode" not in columns:
         conn.execute("ALTER TABLE sessions ADD COLUMN mode TEXT")
+
+    cursor.execute("PRAGMA table_info(inbox_decisions)")
+    inbox_cols = [row["name"] for row in cursor.fetchall()]
+    if "user_id" not in inbox_cols:
+        conn.execute("ALTER TABLE inbox_decisions ADD COLUMN user_id TEXT")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_inbox_decisions_user_status ON inbox_decisions(user_id, status)")
 
     cursor.execute("PRAGMA table_info(agents)")
     agent_cols = [row["name"] for row in cursor.fetchall()]
