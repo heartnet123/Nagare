@@ -18,6 +18,7 @@ import { useApiMonitoring } from './monitoring'
 import { useApiKnowledge } from './knowledge'
 import { useApiModels } from './models'
 import { useApiSettings } from './settings'
+import { useApiInbox } from './inbox'
 
 export {
   useApiEvaluations,
@@ -30,7 +31,8 @@ export {
   useApiMonitoring,
   useApiKnowledge,
   useApiModels,
-  useApiSettings
+  useApiSettings,
+  useApiInbox
 }
 
 /**
@@ -49,6 +51,7 @@ export const useApi = () => {
   const knowledge = useApiKnowledge()
   const models = useApiModels()
   const settings = useApiSettings()
+  const inbox = useApiInbox()
 
   return {
     evaluations,
@@ -61,6 +64,7 @@ export const useApi = () => {
     monitoring,
     knowledge,
     models,
-    settings
+    settings,
+    inbox
   }
 }
