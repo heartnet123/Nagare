@@ -1,0 +1,412 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Nagare Runtime Architecture",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/heartnet123/Nagare.git",
+      "revision": "d330837f6534f10a688a47de7aefb6751dad40d8"
+    },
+    "viewBox": [1900, 1040],
+    "views": [
+      {
+        "id": "requestPath",
+        "label": "Default request path",
+        "focus": ["browser", "nuxtApp", "nuxtProxy", "fastapiApp", "apiRouters"],
+        "note": "Relative /api/** requests stay same-origin and pass through Nitro to FastAPI."
+      },
+      {
+        "id": "chatPath",
+        "label": "Chat streaming path",
+        "focus": ["nuxtApp", "nuxtProxy", "fastapiApp", "apiRouters", "agentRuntime", "llmEndpoint"],
+        "note": "POST Fetch carries JSON in; Nagare SSE events stream back on the same response."
+      },
+      {
+        "id": "statePath",
+        "label": "Runtime state",
+        "focus": ["sessionManager", "sqlite", "agentResources", "agentRuntime"],
+        "note": "SQLite stores application records; backend/data also stores agent and vector state."
+      },
+      {
+        "id": "securityPath",
+        "label": "Security controls",
+        "focus": ["nuxtApp", "nuxtProxy", "routeSecurity", "apiRouters"],
+        "note": "Frontend navigation is globally gated; backend auth and CSRF checks are route-specific."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "browser",
+      "type": "external",
+      "label": "Browser",
+      "sublabel": "User at localhost:3000",
+      "pos": [40, 390],
+      "size": [190, 100]
+    },
+    {
+      "id": "nuxtApp",
+      "type": "frontend",
+      "label": "Nuxt 4 / Vue Application",
+      "sublabel": "Auth gate, domain APIs, SSE parser",
+      "sources": [
+        {
+          "path": "frontend/app/app.vue",
+          "line": 1,
+          "end_line": 10,
+          "label": "global auth setup"
+        },
+        {
+          "path": "frontend/app/composables/useChatSession.ts",
+          "line": 68,
+          "end_line": 273,
+          "label": "POST SSE client"
+        },
+        {
+          "path": "frontend/app/composables/useApi/index.ts",
+          "line": 11,
+          "end_line": 66,
+          "label": "domain API exports"
+        }
+      ],
+      "pos": [300, 380],
+      "size": [250, 120]
+    },
+    {
+      "id": "nuxtProxy",
+      "type": "frontend",
+      "label": "Nitro API Proxy",
+      "sublabel": "Default /api/** to localhost:8000",
+      "sources": [
+        {
+          "path": "frontend/nuxt.config.ts",
+          "line": 21,
+          "end_line": 34,
+          "label": "runtime config and proxy"
+        },
+        {
+          "path": "frontend/app/composables/useApi/utils.ts",
+          "line": 1,
+          "end_line": 4,
+          "label": "API base resolver"
+        }
+      ],
+      "pos": [620, 380],
+      "size": [250, 120]
+    },
+    {
+      "id": "fastapiApp",
+      "type": "backend",
+      "label": "FastAPI Composition Root",
+      "sublabel": "CORS, error handlers, router wiring",
+      "sources": [
+        {
+          "path": "backend/main.py",
+          "line": 14,
+          "end_line": 55,
+          "label": "ASGI composition"
+        },
+        {
+          "path": "backend/middleware/error_handler.py",
+          "line": 7,
+          "end_line": 41,
+          "label": "error responses"
+        }
+      ],
+      "pos": [940, 380],
+      "size": [250, 120]
+    },
+    {
+      "id": "apiRouters",
+      "type": "backend",
+      "label": "API Routers",
+      "sublabel": "REST domains plus chat SSE",
+      "sources": [
+        {
+          "path": "backend/main.py",
+          "line": 39,
+          "end_line": 55,
+          "label": "router mounts"
+        },
+        {
+          "path": "backend/routers/chat.py",
+          "line": 25,
+          "end_line": 143,
+          "label": "chat stream route"
+        }
+      ],
+      "pos": [1260, 380],
+      "size": [250, 120]
+    },
+    {
+      "id": "agentRuntime",
+      "type": "backend",
+      "label": "Chat and Agent Runtime",
+      "sublabel": "event_stream, stream_agent, ToolExecutor",
+      "sources": [
+        {
+          "path": "backend/routers/chat.py",
+          "line": 44,
+          "end_line": 133,
+          "label": "SSE event stream"
+        },
+        {
+          "path": "backend/services/agent/loop.py",
+          "line": 113,
+          "end_line": 184,
+          "label": "agent loop"
+        },
+        {
+          "path": "backend/services/agent/tools.py",
+          "line": 48,
+          "end_line": 220,
+          "label": "tool execution"
+        }
+      ],
+      "pos": [1580, 375],
+      "size": [270, 130]
+    },
+    {
+      "id": "routeSecurity",
+      "type": "security",
+      "label": "Route-Specific Auth and CSRF",
+      "sublabel": "Cookie/Bearer dependencies; selective checks",
+      "sources": [
+        {
+          "path": "backend/middleware/auth.py",
+          "line": 64,
+          "end_line": 106,
+          "label": "auth and CSRF dependencies"
+        },
+        {
+          "path": "backend/routers/knowledge.py",
+          "line": 17,
+          "end_line": 90,
+          "label": "protected routes"
+        },
+        {
+          "path": "backend/routers/agents.py",
+          "line": 71,
+          "end_line": 80,
+          "label": "Bearer-only route"
+        }
+      ],
+      "pos": [940, 100],
+      "size": [250, 110]
+    },
+    {
+      "id": "sessionManager",
+      "type": "backend",
+      "label": "SessionManager",
+      "sublabel": "Import-time singleton; module injection",
+      "sources": [
+        {
+          "path": "backend/main.py",
+          "line": 34,
+          "end_line": 37,
+          "label": "singleton injection"
+        },
+        {
+          "path": "backend/services/session_manager.py",
+          "line": 55,
+          "end_line": 108,
+          "label": "startup state load"
+        },
+        {
+          "path": "backend/services/session_manager.py",
+          "line": 451,
+          "end_line": 516,
+          "label": "message persistence"
+        }
+      ],
+      "pos": [1260, 100],
+      "size": [250, 110]
+    },
+    {
+      "id": "llmEndpoint",
+      "type": "external",
+      "label": "OpenAI-Compatible LLM",
+      "sublabel": "Default localhost:11434/v1",
+      "sources": [
+        {
+          "path": "backend/services/agent/llm.py",
+          "line": 10,
+          "end_line": 87,
+          "label": "config and streaming client"
+        }
+      ],
+      "pos": [1580, 100],
+      "size": [270, 110]
+    },
+    {
+      "id": "sqlite",
+      "type": "database",
+      "label": "SQLite Application Store",
+      "sublabel": "backend/data/app.db",
+      "sources": [
+        {
+          "path": "backend/services/data.py",
+          "line": 7,
+          "end_line": 192,
+          "label": "schema and connect_db"
+        }
+      ],
+      "pos": [1260, 700],
+      "size": [250, 110]
+    },
+    {
+      "id": "agentResources",
+      "type": "database",
+      "label": "Agent and Tool Resources",
+      "sublabel": "JSON, skills, Chroma, workspace, MCP",
+      "sources": [
+        {
+          "path": "backend/services/knowledge.py",
+          "line": 12,
+          "end_line": 269,
+          "label": "SQLite and Chroma knowledge"
+        },
+        {
+          "path": "backend/services/agent/mcp.py",
+          "line": 28,
+          "end_line": 67,
+          "label": "MCP subprocess JSON-RPC"
+        },
+        {
+          "path": "backend/services/agent/tools.py",
+          "line": 83,
+          "end_line": 100,
+          "label": "knowledge and workspace access"
+        }
+      ],
+      "pos": [1580, 700],
+      "size": [270, 120]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "frontend/ · Nuxt process",
+      "wraps": ["nuxtApp", "nuxtProxy"],
+      "pad": 34
+    },
+    {
+      "kind": "region",
+      "label": "backend/ · Uvicorn ASGI process",
+      "wraps": ["fastapiApp", "apiRouters", "agentRuntime", "routeSecurity", "sessionManager"],
+      "pad": 36
+    },
+    {
+      "kind": "security-group",
+      "label": "backend/data/ · mutable runtime state",
+      "wraps": ["sqlite", "agentResources"],
+      "pad": 32
+    }
+  ],
+  "connections": [
+    {
+      "id": "browserUi",
+      "from": "browser",
+      "to": "nuxtApp",
+      "label": "HTTP UI",
+      "labelAt": [265, 350],
+      "variant": "emphasis"
+    },
+    {
+      "id": "frontendApi",
+      "from": "nuxtApp",
+      "to": "nuxtProxy",
+      "label": "relative /api/**",
+      "labelAt": [585, 350]
+    },
+    {
+      "id": "proxyApi",
+      "from": "nuxtProxy",
+      "to": "fastapiApp",
+      "label": "REST or POST SSE",
+      "labelAt": [905, 350],
+      "variant": "emphasis"
+    },
+    {
+      "id": "dispatch",
+      "from": "fastapiApp",
+      "to": "apiRouters",
+      "label": "route dispatch",
+      "labelAt": [1225, 540]
+    },
+    {
+      "id": "chatExecution",
+      "from": "apiRouters",
+      "to": "agentRuntime",
+      "label": "event_stream",
+      "labelAt": [1545, 350],
+      "variant": "emphasis"
+    },
+    {
+      "id": "selectiveGuards",
+      "from": "apiRouters",
+      "to": "routeSecurity",
+      "label": "selected dependencies",
+      "fromSide": "top",
+      "toSide": "right",
+      "labelAt": [1240, 255],
+      "variant": "security"
+    },
+    {
+      "id": "sessionInjection",
+      "from": "apiRouters",
+      "to": "sessionManager",
+      "label": "startup injection",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "labelAt": [1385, 255]
+    },
+    {
+      "id": "databaseAccess",
+      "from": "apiRouters",
+      "to": "sqlite",
+      "label": "connect_db() per operation",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [1385, 605]
+    },
+    {
+      "id": "modelStream",
+      "from": "agentRuntime",
+      "to": "llmEndpoint",
+      "label": "POST /chat/completions stream",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "labelAt": [1715, 255]
+    },
+    {
+      "id": "resourceAccess",
+      "from": "agentRuntime",
+      "to": "agentResources",
+      "label": "config, memory, skills, tools",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [1715, 605],
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Request and stream semantics",
+      "items": [
+        "Default /api/** requests pass through Nitro; NUXT_PUBLIC_API_BASE bypasses that proxy.",
+        "Chat sends JSON with POST Fetch and consumes Nagare SSE; chat mode disables the XML tool loop."
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "State and trust boundaries",
+      "items": [
+        "SessionManager is injected at import; connect_db() initializes each SQLite connection; LLM request values override file and environment defaults.",
+        "Nuxt gates pages, but backend auth and CSRF are selective; CORS permits credentials from http://localhost:3000."
+      ]
+    }
+  ]
+}
