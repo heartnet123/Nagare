@@ -6,8 +6,23 @@ export interface Agent {
   status: 'active' | 'inactive'
   system_prompt?: string
   skills?: string[]
+  role_title?: string
+  category?: string
+  description?: string
+  tags?: string[]
+  capabilities?: string[]
+  tools?: string[]
+  recent_wins?: Array<{
+    title: string
+    time: string
+    date: string
+  }>
+  uses_count?: number
+  completion_rate?: number
   requests?: number
   latency?: number
+  created_at?: string
+  updated_at?: string
 }
 
 export interface Skill {
