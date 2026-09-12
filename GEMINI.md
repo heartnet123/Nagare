@@ -80,17 +80,3 @@ no API key, $0).
   - If oxlint detects remaining errors, inspect line numbers and FIX immediately until 0 errors remain.
   - Never leave JS/TS files in a broken or lint-failing state.
 <!-- CAVEMAN_AND_PONYTAIL_END -->
-
-## Agent skills
-
-### Issue tracker
-
-Issues and specs live in local markdown under `.scratch/<feature>/`. See `docs/agents/issue-tracker.md`.
-
-### Triage labels
-
-Use the five default triage roles as issue status strings. See `docs/agents/triage-labels.md`.
-
-### Domain docs
-
-Single-context: root `CONTEXT.md` and `docs/adr/`. Before domain exploration, read `docs/agents/domain.md`.
