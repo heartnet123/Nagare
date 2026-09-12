@@ -188,7 +188,7 @@ onMounted(() => {
                 No agents created yet
               </p>
               <NuxtLink
-                to="/agents"
+                to="/agents/create"
                 class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors"
                 @click="isOpen = false"
               >

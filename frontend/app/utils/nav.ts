@@ -1,44 +1,20 @@
-import type { NavGroup } from '~/types'
+import type { NavItem } from '~/types'
 import {
-  BarChart2,
-  Database,
-  Target,
-  FileText,
-  Workflow,
+  House,
+  SquareCheck,
   Bot,
-  Activity,
-  Box,
-  BookOpen,
-  Settings,
-  Cpu
+  Inbox,
+  FileText,
+  Network,
+  BarChart3
 } from '@lucide/vue'
 
-export const navGroups: NavGroup[] = [
-  {
-    title: 'EVALUATIONS',
-    items: [
-      { href: '/evaluations', icon: BarChart2, label: 'Evaluations' },
-      { href: '/datasets', icon: Database, label: 'Datasets' },
-      { href: '/benchmark', icon: Target, label: 'Benchmark' },
-      { href: '/logs', icon: FileText, label: 'Logs' }
-    ]
-  },
-  {
-    title: 'SYSTEM OS',
-    items: [
-      { href: '/pipeline', icon: Workflow, label: 'Pipeline' },
-      { href: '/agents', icon: Bot, label: 'Agents' },
-      { href: '/monitoring', icon: Activity, label: 'Monitoring' },
-      { href: '/analytics', icon: BarChart2, label: 'Analytics' }
-    ]
-  },
-  {
-    title: 'CONFIGURATION',
-    items: [
-      { href: '/models', icon: Box, label: 'Models' },
-      { href: '/knowledge', icon: BookOpen, label: 'Knowledge' },
-      { href: '/mcp', icon: Cpu, label: 'MCP Servers' },
-      { href: '/settings', icon: Settings, label: 'Settings' }
-    ]
-  }
+export const navItems: NavItem[] = [
+  { href: '/', icon: House, label: 'Overview', matchRoutes: ['/'] },
+  { href: '/tasks', icon: SquareCheck, label: 'Tasks', matchRoutes: ['/tasks', '/evaluations', '/benchmark'] },
+  { href: '/agents', icon: Bot, label: 'Agents', matchRoutes: ['/agents'] },
+  { href: '/inbox', icon: Inbox, label: 'Inbox', matchRoutes: ['/inbox'] },
+  { href: '/results', icon: FileText, label: 'Results', matchRoutes: ['/results', '/logs'] },
+  { href: '/connections', icon: Network, label: 'Connections', matchRoutes: ['/connections', '/pipeline', '/mcp'] },
+  { href: '/analytics', icon: BarChart3, label: 'Analytics', matchRoutes: ['/analytics', '/monitoring'] }
 ]

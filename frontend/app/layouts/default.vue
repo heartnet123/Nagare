@@ -38,12 +38,6 @@ const { sidebarOpen, mobileMenuOpen, toggleSidebar, openMobileMenu, closeMobileM
         </div>
 
         <div class="flex items-center gap-4">
-          <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-100">
-            <div class="w-2 h-2 rounded-full bg-emerald-500" />
-            <span class="text-xs font-medium text-emerald-700">
-              All Systems Operational
-            </span>
-          </div>
           <UiThemeToggle />
           <UiUserDropdown />
         </div>

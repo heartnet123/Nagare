@@ -6,7 +6,7 @@ export default defineNuxtConfig({
   ],
 
   devtools: {
-    enabled: true
+    enabled: false
   },
 
   css: ['~/assets/css/main.css'],
@@ -30,10 +30,23 @@ export default defineNuxtConfig({
   routeRules: {
     '/api/**': {
       proxy: 'http://localhost:8000/api/**'
-    }
+    },
+    '/tasks': { redirect: '/evaluations' },
+    '/results': { redirect: '/logs' }
   },
 
   compatibilityDate: '2025-01-15',
+
+  vite: {
+    server: {
+      watch: {
+        ignored: ['**/*.tmp*', '**/*.tmpdir/**', '**/.git/**', '**/.nuxt/**', '**/.output/**', '**/backend/**']
+      }
+    },
+    optimizeDeps: {
+      include: ['@lucide/vue', 'marked', 'dompurify', 'highlight.js']
+    }
+  },
 
   eslint: {
     config: {

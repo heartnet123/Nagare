@@ -1,10 +1,14 @@
+import type { Component } from 'vue'
+
 export interface NavItem {
   href: string
-  icon: any
+  icon: Component
   label: string
+  badge?: string | number
+  matchRoutes?: string[]
 }
 
 export interface NavGroup {
-  title: string
+  title?: string
   items: NavItem[]
 }
