@@ -25,7 +25,7 @@ const {
 
 <template>
   <div class="flex-1 min-h-0 flex flex-row overflow-hidden relative">
-    <div class="flex-1 overflow-y-auto px-6 py-6 md:px-8 md:py-8 lg:px-10">
+    <div class="flex-1 overflow-y-auto [scrollbar-width:thin] [scrollbar-color:rgba(120,120,120,0.25)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-stone-300 dark:[&::-webkit-scrollbar-thumb]:bg-stone-700/60 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent px-6 py-6 md:px-8 md:py-8 lg:px-10">
       <ConnectionGrid
         v-model:search-query="searchQuery"
         v-model:active-filter="activeFilter"

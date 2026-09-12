@@ -168,7 +168,7 @@ defineProps<{
   <!-- Fallback Initial -->
   <span
     v-else
-    class="font-bold text-slate-800 text-base"
+    class="font-bold text-stone-800 dark:text-stone-200 text-base"
   >
     {{ name.charAt(0).toUpperCase() }}
   </span>
