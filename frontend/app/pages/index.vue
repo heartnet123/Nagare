@@ -3,7 +3,6 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import {
   Search,
   Bell,
-  Paperclip,
   Play,
   Plug,
   Bot,
@@ -14,14 +13,13 @@ import {
   MessageSquare,
   Sparkles,
   ChevronRight,
-  Database,
-  FileText,
   BarChart2,
   SlidersHorizontal,
   ChevronDown,
   ArrowRight,
   Loader2,
-  Cpu
+  Cpu,
+  X
 } from '@lucide/vue'
 import type { Session } from '~/types'
 import { useApiSessions } from '~/composables/useApi/sessions'
@@ -47,6 +45,7 @@ const goalTextarea = ref<HTMLTextAreaElement | null>(null)
 const submittingGoal = ref(false)
 const composerMode = ref<'chat' | 'agent'>('agent')
 const showToolsDropdown = ref(false)
+const toolsDropdownRef = ref<HTMLElement | null>(null)
 const showSearchModal = ref(false)
 const searchQuery = ref('')
 
@@ -54,9 +53,9 @@ const searchQuery = ref('')
 const activeSessions = ref<Session[]>([])
 const completedSessions = ref<Session[]>([])
 const allSessions = ref<Session[]>([])
-const mcpServers = ref<any[]>([])
-const agents = ref<any[]>([])
-const evaluations = ref<any[]>([])
+const mcpServers = ref<Awaited<ReturnType<typeof mcpApi.list>>>([])
+const agents = ref<Awaited<ReturnType<typeof agentsApi.list>>>([])
+const evaluations = ref<unknown[]>([])
 const avgLatency = ref<string>('—')
 const loading = ref(true)
 
@@ -192,38 +191,46 @@ const handleGlobalKeydown = (e: KeyboardEvent) => {
   }
 }
 
+const handleClickOutside = (e: MouseEvent) => {
+  if (toolsDropdownRef.value && !toolsDropdownRef.value.contains(e.target as Node)) {
+    showToolsDropdown.value = false
+  }
+}
+
 // Filtered sessions in search modal
 const filteredSessions = computed(() => {
   const q = searchQuery.value.trim().toLowerCase()
   if (!q) return allSessions.value.slice(0, 8)
   return allSessions.value.filter((s: Session) =>
-    s.name.toLowerCase().includes(q) ||
-    (s.last_message_content && s.last_message_content.toLowerCase().includes(q))
+    s.name.toLowerCase().includes(q)
+    || (s.last_message_content && s.last_message_content.toLowerCase().includes(q))
   ).slice(0, 10)
 })
 
 onMounted(() => {
   loadDashboardData()
   window.addEventListener('keydown', handleGlobalKeydown)
+  document.addEventListener('click', handleClickOutside)
 })
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleGlobalKeydown)
+  document.removeEventListener('click', handleClickOutside)
 })
 </script>
 
 <template>
-  <div class="flex-1 overflow-y-auto px-6 py-8 hide-scrollbar">
-    <div class="max-w-[1440px] mx-auto flex flex-col lg:flex-row gap-8 items-start">
+  <div class="flex-1 overflow-y-auto px-6 py-8">
+    <div class="max-w-6xl mx-auto flex flex-col lg:flex-row gap-8 items-start">
       <!-- Main Content Column -->
       <div class="flex-1 min-w-0 w-full space-y-8">
         <!-- Header -->
-        <div class="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 border-b border-stone-100 dark:border-stone-800 pb-5">
+        <header class="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 pb-2">
           <div>
-            <h1 class="text-3xl font-bold tracking-tight text-stone-900 dark:text-stone-100 font-sans">
+            <h1 class="text-3xl font-semibold tracking-tight text-stone-900 dark:text-stone-100 font-sans">
               Your workspace
             </h1>
-            <p class="text-sm font-medium text-stone-500 dark:text-stone-400 mt-1">
+            <p class="text-sm font-normal text-stone-500 dark:text-stone-400 mt-1">
               Set a goal. Follow the work. Review the result.
             </p>
           </div>
@@ -232,302 +239,244 @@ onUnmounted(() => {
               {{ formattedDate }}
             </p>
             <p class="text-xs text-stone-400 dark:text-stone-500">
-              A calmer, more productive day.
+              Operations workspace
             </p>
           </div>
-        </div>
+        </header>
 
         <!-- Goal Banner / Composer -->
-        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-50/90 via-sky-50/50 to-white dark:from-blue-950/20 dark:via-stone-900 dark:to-stone-900 border border-blue-100/80 dark:border-stone-800 p-6 md:p-8 shadow-sm">
+        <div class="relative overflow-hidden rounded-3xl bg-stone-100/70 dark:bg-stone-900/80 border border-stone-200 dark:border-stone-800 p-6 md:p-8 shadow-xs">
           <!-- Decorative Background Asset -->
-          <div class="absolute right-0 top-0 w-80 h-full pointer-events-none opacity-40 dark:opacity-20 hidden md:block overflow-hidden">
+          <div
+            class="absolute right-0 top-0 bottom-0 w-1/2 max-w-lg lg:max-w-xl xl:max-w-2xl pointer-events-none opacity-30 dark:opacity-15 hidden md:block overflow-hidden"
+            aria-hidden="true"
+          >
             <img
               src="/hero-banner.jpg"
-              alt="Decorative"
-              class="w-full h-full object-cover object-left mask-radial"
+              alt=""
+              class="w-full h-full object-contain object-right mask-illustration"
             >
           </div>
 
           <div class="relative z-10 max-w-2xl">
-            <span class="inline-block text-xs font-semibold tracking-wide text-blue-600 dark:text-blue-400 uppercase mb-2">
-              Welcome to NagareOS.
+            <span class="inline-block text-xs font-semibold tracking-normal text-emerald-600 dark:text-emerald-400 uppercase mb-1.5">
+              Welcome to NagareOS
             </span>
-            <h2 class="text-2xl md:text-3xl font-bold text-stone-900 dark:text-stone-100 tracking-tight leading-snug mb-6">
+            <h2 class="text-xl sm:text-2xl font-semibold text-stone-900 dark:text-stone-100 tracking-tight leading-snug mb-4 max-w-xl text-balance">
               Start with a goal and your workspace will begin to fill itself.
             </h2>
 
             <!-- Composer Input Card -->
-            <div class="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200/90 dark:border-stone-750 shadow-sm p-4 transition-all focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500">
+            <div class="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 shadow-xs p-3.5 sm:p-4 transition-[border-color,box-shadow] duration-150 ease-out focus-within:ring-2 focus-within:ring-emerald-500/30 dark:focus-within:ring-emerald-400/30 focus-within:border-emerald-600 dark:focus-within:border-emerald-500">
+              <label
+                for="workspace-goal-input"
+                class="sr-only"
+              >Workspace goal or task description</label>
               <textarea
+                id="workspace-goal-input"
                 ref="goalTextarea"
                 v-model="goalText"
-                rows="3"
+                rows="2"
                 placeholder="What would you like to accomplish?"
-                class="w-full resize-none bg-transparent outline-none text-stone-800 dark:text-stone-200 placeholder-stone-400 text-base leading-relaxed"
+                aria-label="Workspace goal or task description"
+                class="w-full resize-none bg-transparent outline-none text-stone-900 dark:text-stone-100 placeholder-stone-400 dark:placeholder-stone-500 text-sm sm:text-base leading-relaxed"
                 :disabled="submittingGoal"
                 @keydown="handleKeyDown"
               />
 
               <!-- Actions Bar -->
-              <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-stone-100 dark:border-stone-800">
+              <div class="flex flex-wrap items-center justify-between gap-3 pt-2.5 border-t border-stone-100 dark:border-stone-800">
                 <div class="flex items-center gap-2">
-
                   <!-- Tools Dropdown -->
-                  <div class="relative">
+                  <div
+                    ref="toolsDropdownRef"
+                    class="relative"
+                    @keydown.esc="showToolsDropdown = false"
+                  >
                     <button
                       type="button"
-                      class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
+                      aria-haspopup="menu"
+                      :aria-expanded="showToolsDropdown"
+                      class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-stone-700 dark:text-stone-200 hover:text-stone-900 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-stone-800 active:scale-95 motion-reduce:transform-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-[background-color,color,transform] duration-150 ease-out cursor-pointer"
+                      :class="{ 'bg-stone-100 dark:bg-stone-800 text-stone-900 dark:text-white': showToolsDropdown }"
                       @click="showToolsDropdown = !showToolsDropdown"
                     >
-                      <SlidersHorizontal :size="14" />
+                      <SlidersHorizontal
+                        :size="14"
+                        aria-hidden="true"
+                      />
                       <span>Tools</span>
                       <ChevronDown
                         :size="13"
-                        class="text-stone-400 transition-transform duration-150"
+                        aria-hidden="true"
+                        class="text-stone-500 dark:text-stone-400 transition-transform duration-150 ease-out motion-reduce:transition-none"
                         :class="{ 'rotate-180': showToolsDropdown }"
                       />
                     </button>
 
                     <!-- Tools Menu -->
-                    <div
-                      v-if="showToolsDropdown"
-                      class="absolute left-0 bottom-full mb-2 w-56 rounded-xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-lg p-2 z-50 text-xs"
+                    <Transition
+                      enter-active-class="transition-[opacity,transform] duration-150 ease-out origin-bottom-left motion-reduce:transition-none"
+                      enter-from-class="opacity-0 scale-95"
+                      enter-to-class="opacity-100 scale-100"
+                      leave-active-class="transition-[opacity,transform] duration-100 ease-in origin-bottom-left motion-reduce:transition-none"
+                      leave-from-class="opacity-100 scale-100"
+                      leave-to-class="opacity-0 scale-95"
                     >
-                      <div class="px-2 py-1 font-semibold text-stone-400 text-[10px] uppercase tracking-wider">
-                        Configured Tools
-                      </div>
                       <div
-                        v-if="mcpServers.length === 0"
-                        class="px-2 py-2 text-stone-400"
+                        v-if="showToolsDropdown"
+                        role="menu"
+                        aria-label="Configured tools"
+                        class="absolute left-0 bottom-full mb-2 w-56 rounded-xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-lg p-2 z-50 text-xs motion-reduce:transition-none"
                       >
-                        No external tools linked.
-                        <NuxtLink
-                          to="/mcp"
-                          class="text-blue-600 hover:underline block mt-1"
+                        <div class="px-2 py-1 font-semibold text-stone-400 text-xs uppercase tracking-normal">
+                          Configured tools
+                        </div>
+                        <div
+                          v-if="mcpServers.length === 0"
+                          class="px-2 py-2 text-stone-500 dark:text-stone-400"
                         >
-                          Configure MCP &rarr;
+                          No external tools linked.
+                          <NuxtLink
+                            to="/mcp"
+                            class="text-emerald-600 dark:text-emerald-400 hover:underline block mt-1"
+                          >
+                            Configure MCP &rarr;
+                          </NuxtLink>
+                        </div>
+                        <NuxtLink
+                          v-for="server in mcpServers"
+                          :key="server.name"
+                          to="/mcp"
+                          role="menuitem"
+                          class="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 text-left text-stone-700 dark:text-stone-300 transition-colors duration-100"
+                          @click="showToolsDropdown = false"
+                        >
+                          <Cpu
+                            :size="13"
+                            aria-hidden="true"
+                          />
+                          <span class="truncate">{{ server.name }}</span>
                         </NuxtLink>
                       </div>
-                      <NuxtLink
-                        v-for="server in mcpServers"
-                        :key="server.name || server.id"
-                        to="/mcp"
-                        class="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 text-left text-stone-700 dark:text-stone-300"
-                        @click="showToolsDropdown = false"
-                      >
-                        <Cpu :size="13" />
-                        <span class="truncate">{{ server.name }}</span>
-                      </NuxtLink>
-                    </div>
+                    </Transition>
                   </div>
 
                   <!-- Mode Switcher -->
-                  <div class="hidden sm:flex items-center bg-stone-100 dark:bg-stone-800 rounded-lg p-0.5 text-xs font-medium">
-                    <button
-                      type="button"
-                      class="px-2.5 py-1 rounded-md transition-all"
-                      :class="composerMode === 'agent' ? 'bg-white dark:bg-stone-700 text-blue-600 dark:text-blue-400 shadow-sm font-semibold' : 'text-stone-500'"
-                      @click="composerMode = 'agent'"
+                  <fieldset class="hidden sm:flex items-center bg-stone-100 dark:bg-stone-800 rounded-lg p-0.5 text-xs font-medium">
+                    <legend class="sr-only">
+                      Composer mode
+                    </legend>
+                    <label
+                      v-for="mode in (['agent', 'chat'] as const)"
+                      :key="mode"
+                      class="relative cursor-pointer"
                     >
-                      Agent
-                    </button>
-                    <button
-                      type="button"
-                      class="px-2.5 py-1 rounded-md transition-all"
-                      :class="composerMode === 'chat' ? 'bg-white dark:bg-stone-700 text-blue-600 dark:text-blue-400 shadow-sm font-semibold' : 'text-stone-500'"
-                      @click="composerMode = 'chat'"
-                    >
-                      Chat
-                    </button>
-                  </div>
+                      <input
+                        v-model="composerMode"
+                        type="radio"
+                        name="composer-mode"
+                        :value="mode"
+                        class="peer sr-only"
+                      >
+                      <span class="block px-2.5 py-1 rounded-md capitalize text-stone-600 dark:text-stone-400 peer-checked:bg-white dark:peer-checked:bg-stone-700 peer-checked:text-emerald-700 dark:peer-checked:text-emerald-400 peer-checked:shadow-xs peer-checked:font-semibold peer-focus-visible:ring-2 peer-focus-visible:ring-emerald-500">
+                        {{ mode }}
+                      </span>
+                    </label>
+                  </fieldset>
                 </div>
 
-                <!-- Submit Button -->
-                <button
-                  type="button"
-                  class="flex items-center gap-2 px-5 py-2 rounded-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-semibold shadow-sm shadow-blue-500/20 disabled:opacity-50 transition-all cursor-pointer"
-                  :disabled="!goalText.trim() || submittingGoal"
-                  @click="startFirstTask"
-                >
-                  <Loader2
-                    v-if="submittingGoal"
-                    :size="15"
-                    class="animate-spin"
-                  />
-                  <Play
-                    v-else
-                    :size="14"
-                    class="fill-current"
-                  />
-                  <span>Start first task</span>
-                </button>
+                <div class="flex items-center gap-3">
+                  <span class="text-xs text-stone-400 dark:text-stone-500 hidden md:inline">
+                    Enter ↵ to run
+                  </span>
+                  <!-- Submit Button -->
+                  <button
+                    type="button"
+                    class="flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold transition-[background-color,transform] duration-150 ease-out shadow-xs cursor-pointer bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 active:scale-[0.98] motion-reduce:transform-none text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:bg-stone-200 dark:disabled:bg-stone-800 disabled:text-stone-400 dark:disabled:text-stone-500 disabled:shadow-none disabled:cursor-not-allowed disabled:active:scale-100"
+                    :disabled="!goalText.trim() || submittingGoal"
+                    @click="startFirstTask"
+                  >
+                    <Loader2
+                      v-if="submittingGoal"
+                      :size="15"
+                      class="animate-spin"
+                      aria-hidden="true"
+                    />
+                    <Play
+                      v-else
+                      :size="14"
+                      class="fill-current"
+                      aria-hidden="true"
+                    />
+                    <span>{{ allSessions.length === 0 ? 'Start first task' : 'Start task' }}</span>
+                  </button>
+                </div>
               </div>
             </div>
 
             <!-- Quick Action Links -->
-            <div class="flex flex-wrap items-center gap-3">
+            <div class="flex flex-wrap items-center gap-3 mt-3.5">
               <NuxtLink
                 to="/mcp"
-                class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/80 dark:bg-stone-850/80 hover:bg-white dark:hover:bg-stone-800 border border-blue-100 dark:border-stone-800 text-xs font-semibold text-stone-700 dark:text-stone-300 shadow-2xs transition-colors"
+                class="group inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white dark:bg-stone-900 hover:bg-stone-50 dark:hover:bg-stone-800 active:scale-[0.98] border border-stone-200 dark:border-stone-800 hover:border-stone-300 dark:hover:border-stone-700 text-xs font-medium text-stone-800 dark:text-stone-200 shadow-2xs transition-[background-color,border-color,transform] duration-150 ease-out motion-reduce:transform-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
               >
                 <Plug
                   :size="13"
-                  class="text-blue-500"
+                  class="text-emerald-600 dark:text-emerald-400"
+                  aria-hidden="true"
                 />
                 <span>Connect tools</span>
                 <ChevronRight
                   :size="13"
-                  class="text-stone-400"
+                  class="text-stone-400 group-hover:text-stone-600 dark:group-hover:text-stone-200 transition-colors duration-150"
+                  aria-hidden="true"
                 />
               </NuxtLink>
 
               <NuxtLink
                 to="/agents"
-                class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/80 dark:bg-stone-850/80 hover:bg-white dark:hover:bg-stone-800 border border-blue-100 dark:border-stone-800 text-xs font-semibold text-stone-700 dark:text-stone-300 shadow-2xs transition-colors"
+                class="group inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white dark:bg-stone-900 hover:bg-stone-50 dark:hover:bg-stone-800 active:scale-[0.98] border border-stone-200 dark:border-stone-800 hover:border-stone-300 dark:hover:border-stone-700 text-xs font-medium text-stone-800 dark:text-stone-200 shadow-2xs transition-[background-color,border-color,transform] duration-150 ease-out motion-reduce:transform-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
               >
                 <Bot
                   :size="13"
-                  class="text-blue-500"
+                  class="text-emerald-600 dark:text-emerald-400"
+                  aria-hidden="true"
                 />
                 <span>Explore agents</span>
                 <ChevronRight
                   :size="13"
-                  class="text-stone-400"
+                  class="text-stone-400 group-hover:text-stone-600 dark:group-hover:text-stone-200 transition-colors duration-150"
+                  aria-hidden="true"
                 />
               </NuxtLink>
             </div>
           </div>
         </div>
 
-        <!-- 4 Step Onboarding Guide Cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-          <!-- Step 1 -->
-          <NuxtLink
-            to="/mcp"
-            class="group p-5 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 shadow-xs hover:border-blue-300 dark:hover:border-blue-800 transition-all flex flex-col justify-between min-h-[140px]"
-          >
-            <div>
-              <div class="flex items-center justify-between mb-3">
-                <span class="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 font-bold text-xs flex items-center justify-center">
-                  1
-                </span>
-                <CheckCircle2
-                  v-if="step1Complete"
-                  :size="16"
-                  class="text-blue-600"
-                />
-              </div>
-              <h3 class="text-sm font-bold text-stone-900 dark:text-stone-100 group-hover:text-blue-600 transition-colors">
-                Connect your tools
-              </h3>
-              <p class="text-xs text-stone-500 dark:text-stone-400 mt-1 leading-relaxed">
-                Link Slack, Notion, Drive and more.
-              </p>
-            </div>
-            <div class="mt-4 text-stone-400 group-hover:text-blue-500 transition-colors">
-              <Database :size="18" />
-            </div>
-          </NuxtLink>
-
-          <!-- Step 2 -->
-          <button
-            type="button"
-            class="group p-5 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 shadow-xs hover:border-blue-300 dark:hover:border-blue-800 transition-all flex flex-col justify-between text-left min-h-[140px]"
-            @click="focusGoalInput"
-          >
-            <div>
-              <div class="flex items-center justify-between mb-3">
-                <span class="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 font-bold text-xs flex items-center justify-center">
-                  2
-                </span>
-                <CheckCircle2
-                  v-if="step2Complete"
-                  :size="16"
-                  class="text-blue-600"
-                />
-              </div>
-              <h3 class="text-sm font-bold text-stone-900 dark:text-stone-100 group-hover:text-blue-600 transition-colors">
-                Create your first task
-              </h3>
-              <p class="text-xs text-stone-500 dark:text-stone-400 mt-1 leading-relaxed">
-                Describe what you want to accomplish.
-              </p>
-            </div>
-            <div class="mt-4 text-stone-400 group-hover:text-blue-500 transition-colors">
-              <FileText :size="18" />
-            </div>
-          </button>
-
-          <!-- Step 3 -->
-          <NuxtLink
-            to="/agents"
-            class="group p-5 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 shadow-xs hover:border-blue-300 dark:hover:border-blue-800 transition-all flex flex-col justify-between min-h-[140px]"
-          >
-            <div>
-              <div class="flex items-center justify-between mb-3">
-                <span class="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 font-bold text-xs flex items-center justify-center">
-                  3
-                </span>
-                <CheckCircle2
-                  v-if="step3Complete"
-                  :size="16"
-                  class="text-blue-600"
-                />
-              </div>
-              <h3 class="text-sm font-bold text-stone-900 dark:text-stone-100 group-hover:text-blue-600 transition-colors">
-                Assign an agent
-              </h3>
-              <p class="text-xs text-stone-500 dark:text-stone-400 mt-1 leading-relaxed">
-                Let an AI agent handle the work for you.
-              </p>
-            </div>
-            <div class="mt-4 text-stone-400 group-hover:text-blue-500 transition-colors">
-              <Bot :size="18" />
-            </div>
-          </NuxtLink>
-
-          <!-- Step 4 -->
-          <NuxtLink
-            to="/evaluations"
-            class="group p-5 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 shadow-xs hover:border-blue-300 dark:hover:border-blue-800 transition-all flex flex-col justify-between min-h-[140px]"
-          >
-            <div>
-              <div class="flex items-center justify-between mb-3">
-                <span class="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 font-bold text-xs flex items-center justify-center">
-                  4
-                </span>
-                <CheckCircle2
-                  v-if="step4Complete"
-                  :size="16"
-                  class="text-blue-600"
-                />
-              </div>
-              <h3 class="text-sm font-bold text-stone-900 dark:text-stone-100 group-hover:text-blue-600 transition-colors">
-                Review your first result
-              </h3>
-              <p class="text-xs text-stone-500 dark:text-stone-400 mt-1 leading-relaxed">
-                Get back polished results, ready to use.
-              </p>
-            </div>
-            <div class="mt-4 text-stone-400 group-hover:text-blue-500 transition-colors">
-              <BarChart2 :size="18" />
-            </div>
-          </NuxtLink>
-        </div>
-
         <!-- Section 1: Active Work -->
-        <div class="space-y-3">
+        <section
+          class="space-y-3"
+          aria-labelledby="heading-active-work"
+        >
           <div class="flex items-center justify-between">
-            <h2 class="text-base font-bold text-stone-900 dark:text-stone-100 tracking-tight">
+            <h2
+              id="heading-active-work"
+              class="text-lg sm:text-xl font-semibold text-stone-900 dark:text-stone-100 tracking-tight"
+            >
               Active work
             </h2>
             <button
               type="button"
-              class="text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 flex items-center gap-1 cursor-pointer"
+              aria-label="View all active tasks"
+              class="text-xs font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 inline-flex items-center gap-1.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded-lg px-2.5 py-1 min-h-[32px] active:scale-95 motion-reduce:transform-none transition-[color,transform] duration-150 ease-out"
               @click="showSearchModal = true"
             >
               <span>View all</span>
-              <ArrowRight :size="13" />
+              <ArrowRight
+                :size="13"
+                aria-hidden="true"
+              />
             </button>
           </div>
 
@@ -536,10 +485,13 @@ onUnmounted(() => {
             v-if="activeSessions.length === 0"
             class="rounded-2xl border border-stone-200/80 dark:border-stone-800 bg-white dark:bg-stone-900 p-8 flex flex-col items-center justify-center text-center"
           >
-            <div class="w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-3">
-              <Folder :size="22" />
+            <div class="w-12 h-12 rounded-full bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 flex items-center justify-center mb-3">
+              <Folder
+                :size="22"
+                aria-hidden="true"
+              />
             </div>
-            <h3 class="text-sm font-bold text-stone-900 dark:text-stone-100 mb-1">
+            <h3 class="text-sm font-semibold text-stone-900 dark:text-stone-100 mb-1">
               No active work yet
             </h3>
             <p class="text-xs text-stone-500 dark:text-stone-400 max-w-sm mb-4">
@@ -547,7 +499,7 @@ onUnmounted(() => {
             </p>
             <button
               type="button"
-              class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs transition-colors"
+              class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 active:scale-[0.98] motion-reduce:transform-none text-white text-xs font-semibold shadow-xs transition-[background-color,transform] duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 cursor-pointer"
               @click="focusGoalInput"
             >
               Create task
@@ -563,76 +515,103 @@ onUnmounted(() => {
               v-for="s in activeSessions"
               :key="s.id"
               :to="`/session/${s.id}`"
-              class="flex items-center justify-between p-4 hover:bg-stone-50 dark:hover:bg-stone-800/40 transition-colors group"
+              class="flex items-center justify-between p-4 hover:bg-stone-50 dark:hover:bg-stone-800/40 transition-colors duration-150 ease-out group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-inset"
             >
               <div class="flex items-center gap-3.5 min-w-0 pr-4">
-                <div class="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-                  <Folder :size="18" />
+                <div class="w-9 h-9 rounded-xl bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 flex items-center justify-center shrink-0">
+                  <Folder
+                    :size="18"
+                    aria-hidden="true"
+                  />
                 </div>
                 <div class="min-w-0">
-                  <h4 class="text-sm font-semibold text-stone-900 dark:text-stone-100 truncate group-hover:text-blue-600 transition-colors">
+                  <h3 class="text-sm font-medium text-stone-900 dark:text-stone-100 truncate group-hover:text-emerald-600 transition-colors duration-150">
                     {{ s.name }}
-                  </h4>
+                  </h3>
                   <p class="text-xs text-stone-500 dark:text-stone-400 truncate mt-0.5">
                     {{ s.last_message_content || 'Session initialized' }}
                   </p>
                 </div>
               </div>
               <div class="flex items-center gap-3 shrink-0">
-                <span class="text-xs text-stone-400">
+                <span class="text-xs text-stone-400 dark:text-stone-500">
                   {{ formatRelativeTime(s.updated_at || s.created_at) }}
                 </span>
                 <ChevronRight
                   :size="15"
-                  class="text-stone-400 group-hover:translate-x-0.5 transition-transform"
+                  class="text-stone-400 group-hover:translate-x-0.5 transition-transform duration-150 ease-out motion-reduce:transform-none"
+                  aria-hidden="true"
                 />
               </div>
             </NuxtLink>
           </div>
-        </div>
+        </section>
 
         <!-- Section 2: Needs Your Decision -->
-        <div class="space-y-3">
+        <section
+          class="space-y-3"
+          aria-labelledby="heading-decisions"
+        >
           <div class="flex items-center justify-between">
-            <h2 class="text-base font-bold text-stone-900 dark:text-stone-100 tracking-tight">
+            <h2
+              id="heading-decisions"
+              class="text-lg sm:text-xl font-semibold text-stone-900 dark:text-stone-100 tracking-tight"
+            >
               Needs your decision
             </h2>
             <NuxtLink
               to="/logs"
-              class="text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 flex items-center gap-1"
+              aria-label="View all decisions and logs"
+              class="text-xs font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 inline-flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded-lg px-2.5 py-1 min-h-[32px] active:scale-95 motion-reduce:transform-none transition-[color,transform] duration-150 ease-out"
             >
               <span>View all</span>
-              <ArrowRight :size="13" />
+              <ArrowRight
+                :size="13"
+                aria-hidden="true"
+              />
             </NuxtLink>
           </div>
 
           <!-- Empty State -->
           <div class="rounded-2xl border border-stone-200/80 dark:border-stone-800 bg-white dark:bg-stone-900 p-8 flex flex-col items-center justify-center text-center">
-            <div class="w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-3">
-              <CheckCircle2 :size="22" />
+            <div class="w-12 h-12 rounded-full bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 flex items-center justify-center mb-3">
+              <CheckCircle2
+                :size="22"
+                aria-hidden="true"
+              />
             </div>
-            <h3 class="text-sm font-bold text-stone-900 dark:text-stone-100 mb-1">
+            <h3 class="text-sm font-semibold text-stone-900 dark:text-stone-100 mb-1">
               No decisions pending
             </h3>
             <p class="text-xs text-stone-500 dark:text-stone-400 max-w-sm">
-              Approvals and questions from agents will appear here.
+              When an agent pauses for confirmation or input, review it here.
             </p>
           </div>
-        </div>
+        </section>
 
         <!-- Section 3: Recently Completed -->
-        <div class="space-y-3">
+        <section
+          class="space-y-3"
+          aria-labelledby="heading-completed"
+        >
           <div class="flex items-center justify-between">
-            <h2 class="text-base font-bold text-stone-900 dark:text-stone-100 tracking-tight">
+            <h2
+              id="heading-completed"
+              class="text-lg sm:text-xl font-semibold text-stone-900 dark:text-stone-100 tracking-tight"
+            >
               Recently completed
             </h2>
             <button
               type="button"
-              class="text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 flex items-center gap-1 cursor-pointer"
+              aria-label="View all completed tasks"
+              class="text-xs font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 inline-flex items-center gap-1.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded-lg px-2.5 py-1 min-h-[32px] active:scale-95 motion-reduce:transform-none transition-[color,transform] duration-150 ease-out"
               @click="showSearchModal = true"
             >
               <span>View all</span>
-              <ArrowRight :size="13" />
+              <ArrowRight
+                :size="13"
+                aria-hidden="true"
+              />
             </button>
           </div>
 
@@ -641,14 +620,17 @@ onUnmounted(() => {
             v-if="completedSessions.length === 0"
             class="rounded-2xl border border-stone-200/80 dark:border-stone-800 bg-white dark:bg-stone-900 p-8 flex flex-col items-center justify-center text-center"
           >
-            <div class="w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-3">
-              <Trophy :size="22" />
+            <div class="w-12 h-12 rounded-full bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 flex items-center justify-center mb-3">
+              <Trophy
+                :size="22"
+                aria-hidden="true"
+              />
             </div>
-            <h3 class="text-sm font-bold text-stone-900 dark:text-stone-100 mb-1">
-              Nothing completed yet
+            <h3 class="text-sm font-semibold text-stone-900 dark:text-stone-100 mb-1">
+              No completed tasks
             </h3>
             <p class="text-xs text-stone-500 dark:text-stone-400 max-w-sm">
-              Finished work will show up here once your agents deliver results.
+              Completed sessions will appear here once tasks finish.
             </p>
           </div>
 
@@ -661,70 +643,84 @@ onUnmounted(() => {
               v-for="s in completedSessions"
               :key="s.id"
               :to="`/session/${s.id}`"
-              class="flex items-center justify-between p-4 hover:bg-stone-50 dark:hover:bg-stone-800/40 transition-colors group"
+              class="flex items-center justify-between p-4 hover:bg-stone-50 dark:hover:bg-stone-800/40 transition-colors duration-150 ease-out group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-inset"
             >
               <div class="flex items-center gap-3.5 min-w-0 pr-4">
-                <div class="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-                  <Trophy :size="18" />
+                <div class="w-9 h-9 rounded-xl bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 flex items-center justify-center shrink-0">
+                  <Trophy
+                    :size="18"
+                    aria-hidden="true"
+                  />
                 </div>
                 <div class="min-w-0">
-                  <h4 class="text-sm font-semibold text-stone-900 dark:text-stone-100 truncate group-hover:text-blue-600 transition-colors">
+                  <h3 class="text-sm font-medium text-stone-900 dark:text-stone-100 truncate group-hover:text-emerald-600 transition-colors duration-150">
                     {{ s.name }}
-                  </h4>
+                  </h3>
                   <p class="text-xs text-stone-500 dark:text-stone-400 truncate mt-0.5">
                     {{ s.last_message_content || 'Completed task' }}
                   </p>
                 </div>
               </div>
               <div class="flex items-center gap-3 shrink-0">
-                <span class="text-xs text-stone-400">
+                <span class="text-xs text-stone-400 dark:text-stone-500">
                   {{ formatRelativeTime(s.updated_at || s.created_at) }}
                 </span>
                 <ChevronRight
                   :size="15"
-                  class="text-stone-400 group-hover:translate-x-0.5 transition-transform"
+                  class="text-stone-400 group-hover:translate-x-0.5 transition-transform duration-150 ease-out motion-reduce:transform-none"
+                  aria-hidden="true"
                 />
               </div>
             </NuxtLink>
           </div>
-        </div>
+        </section>
       </div>
 
-      <!-- Right Column: Getting Started, Stats & Tips -->
-      <div class="w-full lg:w-80 xl:w-88 shrink-0 space-y-6">
+      <!-- Right Column: Search, Getting Started, Stats & Tips -->
+      <aside
+        class="w-full lg:w-80 xl:w-88 shrink-0 space-y-6"
+        aria-label="Workspace sidebar"
+      >
         <!-- Top Search Bar & Notification -->
         <div class="flex items-center gap-3">
-          <div
-            class="flex-1 flex items-center justify-between px-3.5 py-2 rounded-xl bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 shadow-2xs cursor-pointer hover:border-blue-400 transition-colors"
+          <button
+            type="button"
+            class="flex-1 flex items-center justify-between px-3.5 py-2 rounded-xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-2xs cursor-pointer hover:border-stone-300 dark:hover:border-stone-700 active:scale-[0.99] motion-reduce:transform-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-[border-color,transform] duration-150 ease-out text-left"
+            aria-label="Search workspace"
             @click="showSearchModal = true"
           >
             <div class="flex items-center gap-2 text-stone-400 text-xs">
-              <Search :size="15" />
-              <span>Search anything...</span>
+              <Search
+                :size="15"
+                aria-hidden="true"
+              />
+              <span>Search workspace...</span>
             </div>
-            <kbd class="px-1.5 py-0.5 text-[10px] font-medium bg-stone-100 dark:bg-stone-800 text-stone-500 dark:text-stone-400 rounded border border-stone-200 dark:border-stone-700">
+            <kbd class="px-1.5 py-0.5 text-xs font-mono bg-stone-100 dark:bg-stone-800 text-stone-500 dark:text-stone-400 rounded border border-stone-200 dark:border-stone-700">
               ⌘K
             </kbd>
-          </div>
-
-          <button
-            type="button"
-            class="relative p-2.5 rounded-xl bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200 shadow-2xs transition-colors"
-            aria-label="Notifications"
-            @click="navigateTo('/logs')"
-          >
-            <Bell :size="17" />
-            <span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-stone-900" />
           </button>
+
+          <NuxtLink
+            to="/logs"
+            class="relative p-2.5 rounded-xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200 hover:border-stone-300 dark:hover:border-stone-700 active:scale-95 motion-reduce:transform-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 shadow-2xs transition-[color,border-color,transform] duration-150 ease-out cursor-pointer"
+            aria-label="Notifications (1 unread)"
+          >
+            <Bell
+              :size="17"
+              aria-hidden="true"
+            />
+            <span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-emerald-600 dark:bg-emerald-500 ring-2 ring-white dark:ring-stone-900" />
+          </NuxtLink>
         </div>
 
         <!-- Getting Started Progress Card -->
-        <div class="rounded-2xl bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 p-5 shadow-xs space-y-4">
+        <div class="rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-5 shadow-xs space-y-4">
           <div class="flex items-center justify-between">
-            <h3 class="text-sm font-bold text-stone-900 dark:text-stone-100">
+            <h2 class="text-sm font-semibold text-stone-900 dark:text-stone-100">
               Getting started
-            </h3>
-            <span class="text-xs font-semibold text-stone-500 dark:text-stone-400">
+            </h2>
+            <span class="text-xs font-mono font-medium text-stone-500 dark:text-stone-400">
               {{ completedStepsCount }}/4 complete
             </span>
           </div>
@@ -734,109 +730,137 @@ onUnmounted(() => {
             <!-- Item 1 -->
             <NuxtLink
               to="/mcp"
-              class="flex items-center justify-between p-2 rounded-xl hover:bg-stone-50 dark:hover:bg-stone-800/50 transition-colors group"
+              class="flex items-center justify-between p-2 rounded-xl hover:bg-stone-50 dark:hover:bg-stone-800/50 active:scale-[0.99] motion-reduce:transform-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-[background-color,transform] duration-150 ease-out group"
             >
               <div class="flex items-center gap-3 min-w-0">
                 <div
-                  class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-colors"
-                  :class="step1Complete ? 'bg-blue-600 text-white' : 'bg-blue-50 dark:bg-blue-950/40 text-blue-600'"
+                  class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 transition-colors duration-150"
+                  :class="step1Complete ? 'bg-emerald-600 text-white' : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400'"
                 >
-                  1
+                  <CheckCircle2
+                    v-if="step1Complete"
+                    :size="14"
+                    aria-hidden="true"
+                  />
+                  <span v-else>1</span>
+                  <span class="sr-only">({{ step1Complete ? 'Completed' : 'To do' }})</span>
                 </div>
                 <div class="min-w-0">
-                  <p class="text-xs font-bold text-stone-900 dark:text-stone-100 group-hover:text-blue-600 transition-colors truncate">
+                  <p class="text-xs font-medium text-stone-900 dark:text-stone-100 group-hover:text-emerald-600 transition-colors duration-150 truncate">
                     Connect your tools
                   </p>
-                  <p class="text-[11px] text-stone-400 truncate">
+                  <p class="text-xs text-stone-400 truncate">
                     Link your favorite apps
                   </p>
                 </div>
               </div>
               <ChevronRight
                 :size="14"
-                class="text-stone-400 group-hover:text-blue-600 shrink-0"
+                class="text-stone-400 group-hover:text-emerald-600 shrink-0 transition-colors duration-150"
+                aria-hidden="true"
               />
             </NuxtLink>
 
             <!-- Item 2 -->
             <button
               type="button"
-              class="w-full flex items-center justify-between p-2 rounded-xl hover:bg-stone-50 dark:hover:bg-stone-800/50 transition-colors text-left group"
+              class="w-full flex items-center justify-between p-2 rounded-xl hover:bg-stone-50 dark:hover:bg-stone-800/50 active:scale-[0.99] motion-reduce:transform-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-[background-color,transform] duration-150 ease-out text-left group cursor-pointer"
               @click="focusGoalInput"
             >
               <div class="flex items-center gap-3 min-w-0">
                 <div
-                  class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
-                  :class="step2Complete ? 'bg-blue-600 text-white' : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400'"
+                  class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 transition-colors duration-150"
+                  :class="step2Complete ? 'bg-emerald-600 text-white' : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400'"
                 >
-                  2
+                  <CheckCircle2
+                    v-if="step2Complete"
+                    :size="14"
+                    aria-hidden="true"
+                  />
+                  <span v-else>2</span>
+                  <span class="sr-only">({{ step2Complete ? 'Completed' : 'To do' }})</span>
                 </div>
                 <div class="min-w-0">
-                  <p class="text-xs font-bold text-stone-900 dark:text-stone-100 group-hover:text-blue-600 transition-colors truncate">
+                  <p class="text-xs font-medium text-stone-900 dark:text-stone-100 group-hover:text-emerald-600 transition-colors duration-150 truncate">
                     Create your first task
                   </p>
-                  <p class="text-[11px] text-stone-400 truncate">
+                  <p class="text-xs text-stone-400 truncate">
                     Turn an idea into action
                   </p>
                 </div>
               </div>
               <ChevronRight
                 :size="14"
-                class="text-stone-400 group-hover:text-blue-600 shrink-0"
+                class="text-stone-400 group-hover:text-emerald-600 shrink-0 transition-colors duration-150"
+                aria-hidden="true"
               />
             </button>
 
             <!-- Item 3 -->
             <NuxtLink
               to="/agents"
-              class="flex items-center justify-between p-2 rounded-xl hover:bg-stone-50 dark:hover:bg-stone-800/50 transition-colors group"
+              class="flex items-center justify-between p-2 rounded-xl hover:bg-stone-50 dark:hover:bg-stone-800/50 active:scale-[0.99] motion-reduce:transform-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-[background-color,transform] duration-150 ease-out group"
             >
               <div class="flex items-center gap-3 min-w-0">
                 <div
-                  class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
-                  :class="step3Complete ? 'bg-blue-600 text-white' : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400'"
+                  class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 transition-colors duration-150"
+                  :class="step3Complete ? 'bg-emerald-600 text-white' : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400'"
                 >
-                  3
+                  <CheckCircle2
+                    v-if="step3Complete"
+                    :size="14"
+                    aria-hidden="true"
+                  />
+                  <span v-else>3</span>
+                  <span class="sr-only">({{ step3Complete ? 'Completed' : 'To do' }})</span>
                 </div>
                 <div class="min-w-0">
-                  <p class="text-xs font-bold text-stone-900 dark:text-stone-100 group-hover:text-blue-600 transition-colors truncate">
+                  <p class="text-xs font-medium text-stone-900 dark:text-stone-100 group-hover:text-emerald-600 transition-colors duration-150 truncate">
                     Assign an agent
                   </p>
-                  <p class="text-[11px] text-stone-400 truncate">
+                  <p class="text-xs text-stone-400 truncate">
                     Let AI do the work for you
                   </p>
                 </div>
               </div>
               <ChevronRight
                 :size="14"
-                class="text-stone-400 group-hover:text-blue-600 shrink-0"
+                class="text-stone-400 group-hover:text-emerald-600 shrink-0 transition-colors duration-150"
+                aria-hidden="true"
               />
             </NuxtLink>
 
             <!-- Item 4 -->
             <NuxtLink
               to="/evaluations"
-              class="flex items-center justify-between p-2 rounded-xl hover:bg-stone-50 dark:hover:bg-stone-800/50 transition-colors group"
+              class="flex items-center justify-between p-2 rounded-xl hover:bg-stone-50 dark:hover:bg-stone-800/50 active:scale-[0.99] motion-reduce:transform-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-[background-color,transform] duration-150 ease-out group"
             >
               <div class="flex items-center gap-3 min-w-0">
                 <div
-                  class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
-                  :class="step4Complete ? 'bg-blue-600 text-white' : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400'"
+                  class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 transition-colors duration-150"
+                  :class="step4Complete ? 'bg-emerald-600 text-white' : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400'"
                 >
-                  4
+                  <CheckCircle2
+                    v-if="step4Complete"
+                    :size="14"
+                    aria-hidden="true"
+                  />
+                  <span v-else>4</span>
+                  <span class="sr-only">({{ step4Complete ? 'Completed' : 'To do' }})</span>
                 </div>
                 <div class="min-w-0">
-                  <p class="text-xs font-bold text-stone-900 dark:text-stone-100 group-hover:text-blue-600 transition-colors truncate">
+                  <p class="text-xs font-medium text-stone-900 dark:text-stone-100 group-hover:text-emerald-600 transition-colors duration-150 truncate">
                     Review your first result
                   </p>
-                  <p class="text-[11px] text-stone-400 truncate">
+                  <p class="text-xs text-stone-400 truncate">
                     See what your agents deliver
                   </p>
                 </div>
               </div>
               <ChevronRight
                 :size="14"
-                class="text-stone-400 group-hover:text-blue-600 shrink-0"
+                class="text-stone-400 group-hover:text-emerald-600 shrink-0 transition-colors duration-150"
+                aria-hidden="true"
               />
             </NuxtLink>
           </div>
@@ -845,112 +869,85 @@ onUnmounted(() => {
         <!-- 2x2 Metric Stat Cards -->
         <div class="grid grid-cols-2 gap-3">
           <!-- Active tasks -->
-          <div class="p-4 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 shadow-2xs">
+          <div class="p-4 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-2xs">
             <div class="flex items-center justify-between">
-              <span class="text-2xl font-bold text-stone-900 dark:text-stone-100">
+              <span class="text-2xl font-semibold text-stone-900 dark:text-stone-100 font-mono">
                 {{ activeSessions.length }}
               </span>
-              <!-- Sparkline SVG -->
-              <svg
-                class="w-10 h-5 text-blue-500"
-                viewBox="0 0 40 20"
-                fill="none"
-              >
-                <path
-                  d="M2 15 Q 12 5, 22 12 T 38 4"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  fill="none"
-                />
-              </svg>
+              <Folder
+                :size="18"
+                class="text-stone-400"
+                aria-hidden="true"
+              />
             </div>
-            <p class="text-[11px] font-medium text-stone-500 dark:text-stone-400 mt-2">
+            <p class="text-xs font-medium text-stone-500 dark:text-stone-400 mt-2">
               Active tasks
             </p>
           </div>
 
           <!-- Results -->
-          <div class="p-4 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 shadow-2xs">
+          <div class="p-4 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-2xs">
             <div class="flex items-center justify-between">
-              <span class="text-2xl font-bold text-stone-900 dark:text-stone-100">
+              <span class="text-2xl font-semibold text-stone-900 dark:text-stone-100 font-mono">
                 {{ evaluations.length }}
               </span>
-              <div class="flex items-end gap-0.5 h-5 text-blue-500">
-                <div class="w-1 bg-current h-2 rounded-t" />
-                <div class="w-1 bg-current h-4 rounded-t" />
-                <div class="w-1 bg-current h-3 rounded-t" />
-                <div class="w-1 bg-current h-5 rounded-t" />
-              </div>
+              <BarChart2
+                :size="18"
+                class="text-stone-400"
+                aria-hidden="true"
+              />
             </div>
-            <p class="text-[11px] font-medium text-stone-500 dark:text-stone-400 mt-2">
+            <p class="text-xs font-medium text-stone-500 dark:text-stone-400 mt-2">
               Results
             </p>
           </div>
 
           <!-- Decisions pending -->
-          <div class="p-4 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 shadow-2xs">
+          <div class="p-4 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-2xs">
             <div class="flex items-center justify-between">
-              <span class="text-2xl font-bold text-stone-900 dark:text-stone-100">
+              <span class="text-2xl font-semibold text-stone-900 dark:text-stone-100 font-mono">
                 0
               </span>
-              <!-- Orange sparkline SVG -->
-              <svg
-                class="w-10 h-5 text-amber-500"
-                viewBox="0 0 40 20"
-                fill="none"
-              >
-                <path
-                  d="M2 16 Q 15 10, 25 15 T 38 6"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  fill="none"
-                />
-              </svg>
+              <CheckCircle2
+                :size="18"
+                class="text-stone-400 dark:text-stone-500"
+                aria-hidden="true"
+              />
             </div>
-            <p class="text-[11px] font-medium text-stone-500 dark:text-stone-400 mt-2">
+            <p class="text-xs font-medium text-stone-500 dark:text-stone-400 mt-2">
               Decisions pending
             </p>
           </div>
 
-          <!-- Avg. completion time -->
-          <div class="p-4 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 shadow-2xs">
+          <!-- Avg. latency -->
+          <div class="p-4 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-2xs">
             <div class="flex items-center justify-between">
-              <span class="text-2xl font-bold text-stone-900 dark:text-stone-100">
+              <span class="text-2xl font-semibold text-stone-900 dark:text-stone-100 font-mono">
                 {{ avgLatency }}
               </span>
-              <!-- Green trend SVG -->
-              <svg
-                class="w-10 h-5 text-emerald-500"
-                viewBox="0 0 40 20"
-                fill="none"
-              >
-                <path
-                  d="M2 17 L 15 12 L 25 14 L 38 5"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
+              <Cpu
+                :size="18"
+                class="text-emerald-500"
+                aria-hidden="true"
+              />
             </div>
-            <p class="text-[11px] font-medium text-stone-500 dark:text-stone-400 mt-2">
+            <p class="text-xs font-medium text-stone-500 dark:text-stone-400 mt-2">
               Avg. latency
             </p>
           </div>
         </div>
 
         <!-- Tips Card -->
-        <div class="rounded-2xl bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 p-5 shadow-xs space-y-4">
+        <div class="rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-5 shadow-xs space-y-4">
           <div class="flex items-center gap-2 text-stone-900 dark:text-stone-100">
             <Lightbulb
               :size="16"
               class="text-amber-500"
+              aria-hidden="true"
             />
-            <h3 class="text-sm font-bold">
+            <h2 class="text-sm font-semibold">
               Tips
-            </h3>
+            </h2>
           </div>
 
           <div class="space-y-3.5">
@@ -958,12 +955,13 @@ onUnmounted(() => {
             <div class="flex items-start gap-3 text-xs">
               <Plug
                 :size="15"
-                class="text-blue-500 shrink-0 mt-0.5"
+                class="text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5"
+                aria-hidden="true"
               />
               <div>
-                <h4 class="font-bold text-stone-800 dark:text-stone-200">
+                <h3 class="font-medium text-stone-800 dark:text-stone-200">
                   Connect Slack, Notion, or Drive
-                </h4>
+                </h3>
                 <p class="text-stone-500 dark:text-stone-400 mt-0.5 leading-relaxed">
                   Give your agents the context they need.
                 </p>
@@ -974,12 +972,13 @@ onUnmounted(() => {
             <div class="flex items-start gap-3 text-xs">
               <MessageSquare
                 :size="15"
-                class="text-blue-500 shrink-0 mt-0.5"
+                class="text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5"
+                aria-hidden="true"
               />
               <div>
-                <h4 class="font-bold text-stone-800 dark:text-stone-200">
+                <h3 class="font-medium text-stone-800 dark:text-stone-200">
                   Describe your goal in plain language
-                </h4>
+                </h3>
                 <p class="text-stone-500 dark:text-stone-400 mt-0.5 leading-relaxed">
                   You don't need to be specific or technical.
                 </p>
@@ -990,12 +989,13 @@ onUnmounted(() => {
             <div class="flex items-start gap-3 text-xs">
               <Sparkles
                 :size="15"
-                class="text-blue-500 shrink-0 mt-0.5"
+                class="text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5"
+                aria-hidden="true"
               />
               <div>
-                <h4 class="font-bold text-stone-800 dark:text-stone-200">
-                  Agents will organize work automatically
-                </h4>
+                <h3 class="font-medium text-stone-800 dark:text-stone-200">
+                  Agents organize work automatically
+                </h3>
                 <p class="text-stone-500 dark:text-stone-400 mt-0.5 leading-relaxed">
                   They break it down, take action, and keep you updated.
                 </p>
@@ -1003,29 +1003,44 @@ onUnmounted(() => {
             </div>
           </div>
         </div>
-      </div>
+      </aside>
     </div>
 
     <!-- Search Modal / Global Command Palette -->
     <UModal v-model:open="showSearchModal">
       <template #header>
-        <div class="flex items-center justify-between">
-          <h3 class="text-base font-bold text-stone-900 dark:text-stone-100">
-            Search Workspace
-          </h3>
+        <div class="flex items-center justify-between w-full">
+          <h2 class="text-base font-semibold text-stone-900 dark:text-stone-100">
+            Search workspace
+          </h2>
+          <button
+            type="button"
+            aria-label="Close search"
+            class="p-1.5 rounded-lg text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+            @click="showSearchModal = false"
+          >
+            <X
+              :size="16"
+              aria-hidden="true"
+            />
+          </button>
         </div>
       </template>
 
       <template #body>
         <div class="space-y-4">
           <div class="relative">
-            <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-stone-400">
+            <span
+              class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-stone-400"
+              aria-hidden="true"
+            >
               <Search :size="16" />
             </span>
             <input
               v-model="searchQuery"
               type="text"
-              class="w-full pl-10 pr-4 py-2.5 border border-stone-200 dark:border-stone-800 rounded-xl bg-stone-50 dark:bg-stone-900/50 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-stone-800 dark:text-stone-200"
+              aria-label="Search tasks, sessions or knowledge"
+              class="w-full pl-10 pr-4 py-2.5 border border-stone-200 dark:border-stone-800 rounded-xl bg-stone-50 dark:bg-stone-900/50 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-stone-800 dark:text-stone-200"
               placeholder="Search tasks, sessions or knowledge..."
               autofocus
             >
@@ -1043,20 +1058,21 @@ onUnmounted(() => {
               v-for="s in filteredSessions"
               :key="s.id"
               :to="`/session/${s.id}`"
-              class="flex items-center justify-between py-2.5 px-3 rounded-xl hover:bg-stone-50 dark:hover:bg-stone-800/40 transition-colors group"
+              class="flex items-center justify-between py-2.5 px-3 rounded-xl hover:bg-stone-50 dark:hover:bg-stone-800/40 transition-colors duration-150 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-inset"
               @click="showSearchModal = false"
             >
               <div class="min-w-0 pr-3">
-                <h4 class="text-sm font-medium text-stone-800 dark:text-stone-200 truncate group-hover:text-blue-600 transition-colors">
+                <p class="text-sm font-medium text-stone-800 dark:text-stone-200 truncate group-hover:text-emerald-600 transition-colors duration-150">
                   {{ s.name }}
-                </h4>
+                </p>
                 <p class="text-xs text-stone-400 truncate mt-0.5">
                   {{ s.last_message_content || 'Session' }}
                 </p>
               </div>
               <ChevronRight
                 :size="14"
-                class="text-stone-400 group-hover:translate-x-0.5 transition-transform shrink-0"
+                class="text-stone-400 group-hover:translate-x-0.5 transition-transform duration-150 ease-out motion-reduce:transform-none shrink-0"
+                aria-hidden="true"
               />
             </NuxtLink>
           </div>
@@ -1067,8 +1083,8 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-.mask-radial {
-  mask-image: radial-gradient(circle at 80% 50%, black 30%, transparent 80%);
-  -webkit-mask-image: radial-gradient(circle at 80% 50%, black 30%, transparent 80%);
+.mask-illustration {
+  mask-image: radial-gradient(ellipse 90% 85% at 75% 50%, black 40%, transparent 95%);
+  -webkit-mask-image: radial-gradient(ellipse 90% 85% at 75% 50%, black 40%, transparent 95%);
 }
 </style>
